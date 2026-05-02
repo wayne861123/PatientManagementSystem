@@ -1,0 +1,1245 @@
+/* ==========================================================================
+   醫師門診管理系統 - 金色主題樣式表
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Reset & Base Styles
+   -------------------------------------------------------------------------- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif;
+    background: #F5E6C8;
+    min-height: 100vh;
+    display: flex;
+    color: #2C2C2C;
+}
+
+/* 連結基本樣式 */
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* 標題 h1 */
+h1 {
+    font-size: 2.5rem;
+    color: #000000;
+}
+
+/* 全域 select 樣式 */
+select {
+    text-align: center;
+    text-align-last: center;
+}
+
+/* --------------------------------------------------------------------------
+   2. Layout - 頁面佈局
+   -------------------------------------------------------------------------- */
+
+/* 側邊欄 */
+.sidebar {
+    flex-shrink: 0;
+    background: #1a1a2e;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-expand {
+    width: 160px;
+}
+
+.sidebar-collapse {
+    width: 69px;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar li {
+    border-bottom: 1px solid #333;
+}
+
+.sidebar a {
+    display: block;
+    padding: 15px 20px;
+    color: white;
+    text-decoration: none;
+    max-height: 52px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.sidebar a:hover {
+    background: #333;
+    color: #FFD700;
+}
+
+.sidebar li:first-child a {
+    padding: 5px 15px;
+    display: flex;
+    align-items: center;
+}
+
+/* 主內容區域 */
+.container {
+    flex: 1;
+}
+
+.header {
+    text-align: center;
+    color: #000000;
+}
+
+.body {
+    padding: 10px;
+}
+
+.page-title {
+    color: #000000;
+}
+
+/* --------------------------------------------------------------------------
+   3. Cards & Containers - 卡片與容器
+   -------------------------------------------------------------------------- */
+
+/* 通用卡片樣式 */
+.card {
+    background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+    border-radius: 15px;
+    padding: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 
+                0 0 20px rgba(212, 175, 55, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+    color: inherit;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    display: flex;
+    border: 0px solid rgba(212, 175, 55, 0.3);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    /* box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4), 
+                0 0 30px rgba(212, 175, 55, 0.2); */
+}
+
+.card h2 {
+    text-align: center;
+    border-bottom: 3px solid #D4AF37;
+    width: 100%;
+    color: #000000;
+    padding-bottom: 10px;
+}
+
+.card a {
+    width: 100%;
+}
+
+.card h2:first-child {
+    margin-top: auto;
+}
+
+/* 詳細資料卡片 */
+.detail-card {
+    background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3), 
+                0 0 30px rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+/* 病患卡片 */
+.patient-card {
+    background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s, box-shadow 0.3s;
+    text-decoration: none;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.patient-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 
+                0 0 25px rgba(212, 175, 55, 0.2);
+}
+
+.patient-card h3 {
+    margin-bottom: 10px;
+    border-bottom: 2px solid #D4AF37;
+    padding-bottom: 8px;
+    color: #000000;
+}
+
+.patient-card p {
+    margin: 6px 0;
+    font-size: 0.9rem;
+}
+
+.patient-card p strong {
+    color: #D4AF37;
+}
+
+/* 病患詳情名稱 */
+.detail-patient-name {
+    font-size: 2.5rem;
+    color: #000000;
+}
+
+/* 表單卡片 */
+.form-card {
+    background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3), 
+                0 0 30px rgba(212, 175, 55, 0.15);
+    width: 800px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+/* 檢查項目卡片 */
+.examination-card {
+    background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+    border-radius: 15px;
+    padding: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s, box-shadow 0.3s;
+    color: inherit;
+    align-content: center;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+/* 返回連結 */
+.back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    padding: 10px 25px;
+    background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: bold;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+.back-link:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5);
+}
+
+/* 卡片標題 */
+.card-title {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2rem;
+    border-bottom: 3px solid #D4AF37;
+    padding-bottom: 20px;
+    color: #000000;
+}
+
+/* --------------------------------------------------------------------------
+   4. Grids - 網格佈局
+   -------------------------------------------------------------------------- */
+
+/* 通用網格（4列） */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 20px;
+    padding-bottom: 20px;
+    width: 1000px;
+}
+
+/* 病患網格 */
+.patient-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* 疾病網格 */
+.disease-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+/* 資訊網格（3列） */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    padding-bottom: 15px;
+}
+
+/* 表單網格（3列） */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 15px;
+}
+
+/* 檢查資訊網格 */
+.examination-info-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 20px;
+    padding-bottom: 20px;
+}
+
+/* 歷史紀錄網格 */
+.history-grid {
+    display: grid;
+    grid-template-columns: 30px 120px 150px 250px auto;
+    gap: 10px;
+    padding-bottom: 20px;
+    place-items: center;
+}
+
+.history-grid .btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+}
+
+.history-grid .textarea {
+    resize: none;
+    padding: 4px;
+    height: 90px;
+}
+
+/* 卡片內容網格 */
+.card-grid {
+    display: grid;
+    grid-template-rows: repeat(2, 1fr);
+    gap: 20px;
+    padding-bottom: 20px;
+    width: 105px;
+}
+
+/* 卡片內容行網格 */
+.card-content-grid {
+    display: grid;
+    grid-template-columns: 120px 120px 100px auto;
+    padding-bottom: 5px;
+}
+
+.card-content-grid label {
+    text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   5. Buttons - 按鈕
+   -------------------------------------------------------------------------- */
+
+/* 通用按鈕 */
+.general-btn,
+.view-patients-btn,
+.patient-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+    color: white;
+    text-decoration: none;
+    text-align: center;
+    border-radius: 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    width: fit-content;
+    height: fit-content;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+.general-btn {
+    margin-bottom: 5px;
+}
+.general-btn:hover {
+    background: linear-gradient(135deg, #FFD700 0%, #D4AF37 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5);
+}
+.view-patients-btn:hover,
+.patient-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5);
+}
+
+/* 刪除按鈕 */
+.delete-btn {
+    margin-left: 15px;
+    background: linear-gradient(135deg, #c0392b 0%, #96281b 100%);
+}
+
+/* 提交按鈕 */
+.submit-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+    transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+    background: linear-gradient(135deg, #FFD700 0%, #D4AF37 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5);
+}
+
+/* 新增按鈕（白色背景） */
+.add-btn {
+    display: inline-block;
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+.add-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(212, 175, 55, 0.5);
+}
+
+/* 新增藥物按鈕 */
+.add-med-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+.add-med-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5);
+}
+
+/* 新增醫師按鈕卡片 */
+.add-button {
+    display: flex;
+}
+
+/* 新增病患連結區塊 */
+#add-patient {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#add-patient a {
+    background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 1.1rem;
+    padding: 15px 30px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+#add-patient a:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(212, 175, 55, 0.5);
+}
+
+/* --------------------------------------------------------------------------
+   6. Forms & Inputs - 表單與輸入
+   -------------------------------------------------------------------------- */
+
+/* 資訊區塊 */
+.info-section {
+    margin-bottom: 30px;
+}
+
+.info-section h3 {
+    color: #D4AF37;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    padding-left: 10px;
+    border-left: 4px solid #D4AF37;
+}
+
+/* 資訊項目 */
+.info-item {
+    padding: 15px;
+    background: #fafafa;
+    border-radius: 10px;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.info-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.info-item label {
+    display: block;
+    color: #888;
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+}
+
+.info-item span {
+    color: #2C2C2C;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.info-item select {
+    width: 100%;
+    height: 34px;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.3s;
+}
+
+.info-item select:focus {
+    border-color: #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+/* 資訊輸入框 */
+.info-input {
+    padding: 4px 0px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: inherit;
+    justify-content: center;
+    text-align: center;
+    width: 95%;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.info-input:focus {
+    border-color: #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+    outline: none;
+}
+
+#add-followup-record-form .info-input {
+    background: #ffffff;
+}
+
+/* 卡片輸入框 */
+.info-item .card-input {
+    width: 100%;
+    padding: 4px 15px;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.3s;
+}
+
+.info-item .card-input:focus {
+    border-color: #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+    outline: none;
+}
+
+/* 歷史紀錄項目 */
+.history-item {
+    padding: 5px;
+    background: #fafafa;
+    border-radius: 10px;
+    margin: 5px;
+    width: 100%;
+    height: 100%;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.history-item label {
+    display: block;
+    color: #888;
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+}
+
+/* 表單區塊 */
+.form-section {
+    margin-bottom: 25px;
+}
+
+.form-section h3 {
+    color: #D4AF37;
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #D4AF37;
+    padding-bottom: 8px;
+}
+
+/* 表單群組 */
+.form-group {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    display: block;
+    color: #2C2C2C;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 4px 15px;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus {
+    border-color: #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+    outline: none;
+}
+
+.form-group select {
+    width: 100%;
+    height: 34px;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.3s;
+}
+
+.form-group select:focus {
+    border-color: #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+    outline: none;
+}
+
+/* 表單行 */
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+/* 表單選擇器包裝 */
+.form-select {
+    /* 用於包裝 select 元素的 wrapper */
+}
+
+/* 文字區域 */
+.textarea {
+    resize: vertical;
+    width: 100%;
+    min-height: 70px;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.textarea:focus {
+    border-color: #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+    outline: none;
+}
+
+/* 資訊文字區域 */
+.info-textarea {
+    resize: none;
+    width: 100%;
+    padding: 2px 2px;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: inherit;
+    transition: border-color 0.3s;
+}
+
+.info-textarea:focus {
+    border-color: #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+    outline: none;
+}
+
+#add-followup-record-form .info-textarea {
+    background: #ffffff;
+}
+
+/* 藥物表單 */
+.med-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.med-form input,
+.med-form select {
+    flex: 1;
+    min-width: 120px;
+    padding: 10px;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    transition: border-color 0.3s;
+}
+
+.med-form input:focus,
+.med-form select:focus {
+    outline: none;
+    border-color: #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+/* 文字輸入框 */
+.text-input {
+    width: 100%;
+    padding: 6px 20px;
+    font-size: 1rem;
+    border: 2px solid rgba(212, 175, 55, 0.5);
+    border-radius: 25px;
+    outline: none;
+    transition: all 0.3s ease;
+    text-align: left;
+    margin-bottom: 15px;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.text-input:focus {
+    border-color: #D4AF37;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+}
+
+.text-input::placeholder {
+    color: #999;
+}
+
+/* --------------------------------------------------------------------------
+   7. Tables - 表格
+   -------------------------------------------------------------------------- */
+
+/* 病患表格 */
+.patient-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.patient-table th {
+    background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+    color: white;
+    padding: 15px;
+    text-align: left;
+    font-weight: bold;
+}
+
+.patient-table td {
+    padding: 15px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    color: #2C2C2C;
+}
+
+.patient-table tr:hover {
+    background: rgba(212, 175, 55, 0.1);
+}
+
+.patient-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* --------------------------------------------------------------------------
+   8. Medications - 用藥相關
+   -------------------------------------------------------------------------- */
+
+/* 用藥列表 */
+.medication-list {
+    list-style: none;
+    padding: 0;
+}
+
+/* 用藥項目 */
+.medication-item {
+    background: linear-gradient(145deg, #fafafa 0%, #ffffff 100%);
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    transition: all 0.3s ease;
+}
+
+.medication-item:hover {
+    box-shadow: 0 5px 20px rgba(212, 175, 55, 0.2);
+}
+
+.medication-item .medicine-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #B8860B;
+    padding: 0px 20px;
+    width: 150px;
+    display: grid;
+}
+
+.medication-item .doctor-info {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* 用藥狀態 */
+.medication-item .status {
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.medication-item .status.active {
+    background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+    color: white;
+}
+
+.medication-item .status.stopped {
+    background: linear-gradient(135deg, #c0392b 0%, #96281b 100%);
+    color: white;
+}
+
+/* 藥物資訊 */
+.medicine-info {
+    flex: 1;
+    display: flex;
+}
+
+.medicine {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #B8860B;
+    padding: 0px 10px;
+    display: grid;
+}
+
+.medicine label {
+    font-size: 0.95rem;
+    color: #888;
+    margin-right: 5px;
+    font-weight: normal;
+}
+
+/* 無用藥提示 */
+.no-medication {
+    text-align: center;
+    color: #888;
+    padding: 30px;
+    background: #fafafa;
+    border-radius: 10px;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+/* 狀態選擇下拉選單 */
+.status-select {
+    padding: 8px 15px;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: 80px;
+    transition: all 0.3s ease;
+}
+
+.status-select.active {
+    background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+    color: white;
+    border-color: #27ae60;
+}
+
+.status-select.stopped {
+    background: linear-gradient(135deg, #c0392b 0%, #96281b 100%);
+    color: white;
+    border-color: #c0392b;
+}
+
+/* --------------------------------------------------------------------------
+   9. Utilities - 通用工具類別
+   -------------------------------------------------------------------------- */
+
+/* 隱藏元素 */
+.hidden {
+    display: none !important;
+}
+
+/* 置中對齊 */
+.center {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 行內區塊 */
+.inline-block,
+.inline {
+    display: inline-block;
+}
+
+/* 彈性盒 */
+.flex {
+    display: flex;
+}
+
+/* Margin 工具類別 */
+.mt-5 { margin-top: 5px; }
+.mt-10 { margin-top: 10px; }
+.mt-15 { margin-top: 15px; }
+.mb-5 { margin-bottom: 5px; }
+.mb-10 { margin-bottom: 10px; }
+.mb-20 { margin-bottom: 20px; }
+
+/* Padding 工具類別 */
+.pl-20 { padding-left: 20px; }
+.pr-20 { padding-right: 20px; }
+.pb-5 { padding-bottom: 5px; }
+.pb-10 { padding-bottom: 10px; }
+.pb-20 { padding-bottom: 20px; }
+
+/* Width 工具類別 */
+.w-80 { width: 80%; }
+.w-95 { width: 95%; }
+.w-100 { width: 100%; }
+.w-1000 { width: 1000px; }
+
+/* Text Align 工具類別 */
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+
+/* Height 工具類別 */
+.h-100 { height: 100%; }
+
+/* 按鈕變體 */
+.btn-white {
+    background: white;
+    color: #D4AF37;
+    font-weight: bold;
+}
+
+.btn-margin {
+    margin: 10px 0px;
+}
+
+/* 側邊欄透明按鈕 */
+.sidebar-transparent {
+    background: inherit;
+    box-shadow: none;
+}
+
+/* 分隔線 */
+.divider {
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent 0%, #D4AF37 50%, transparent 100%);
+    margin-bottom: 10px;
+}
+
+/* 檢查標題 */
+.exam-title {
+    border-bottom: 2px solid #D4AF37;
+}
+
+/* --------------------------------------------------------------------------
+   10. Gold Accents - 金色點綴
+   -------------------------------------------------------------------------- */
+
+/* 金色文字 */
+.gold-text {
+    color: #D4AF37;
+}
+
+.gold-text-light {
+    color: #FFD700;
+}
+
+/* --------------------------------------------------------------------------
+   11. Reminder Section - 提醒區塊
+   -------------------------------------------------------------------------- */
+
+/* 提醒區塊容器 */
+.reminder-section {
+    width: 1000px;
+    margin-bottom: 30px;
+    background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+}
+
+/* 提醒標題 */
+.reminder-title {
+    font-size: 1.5rem;
+    color: #2C2C2C;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #D4AF37;
+}
+
+/* 提醒列表 */
+.reminder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 提醒項目 */
+.reminder-item {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.reminder-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 20px rgba(212, 175, 55, 0.2);
+    border-color: #D4AF37;
+}
+
+/* 緊急程度指示器 */
+.reminder-indicator {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.reminder-indicator.red {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+}
+
+.reminder-indicator.yellow {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+}
+
+/* 緊急圖示 */
+.urgent-icon {
+    font-size: 1.5rem;
+}
+
+/* 提醒內容 */
+.reminder-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.reminder-patient {
+    font-size: 1.1rem;
+    color: #2C2C2C;
+    margin-bottom: 8px;
+}
+
+.reminder-info {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.reminder-medicine {
+    color: #B8860B;
+    font-weight: 500;
+}
+
+.reminder-separator {
+    margin: 0 8px;
+    color: #ccc;
+}
+
+.reminder-doctor {
+    color: #666;
+    min-width: 120px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* 提醒項目列表（多筆提醒） */
+.reminder-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* 提醒項目標籤 */
+.reminder-item-tag {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* 回診提醒標籤 */
+.reminder-item-tag.followup {
+    background: rgba(212, 175, 55, 0.15);
+    color: #B8860B;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+/* 逾期回診提醒標籤 */
+.reminder-item-tag.followup.overdue {
+    background: rgba(231, 76, 60, 0.15);
+    color: #c0392b;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+/* 針數不足提醒標籤 */
+.reminder-item-tag.dose {
+    background: rgba(243, 156, 18, 0.15);
+    color: #e67e22;
+    border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+.reminder-item-tag.dose.red {
+    background: rgba(231, 76, 60, 0.15);
+    color: #c0392b;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.reminder-item-tag.dose.yellow {
+    background: rgba(243, 156, 18, 0.15);
+    color: #e67e22;
+    border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+/* 提醒日期區塊 */
+.reminder-date {
+    text-align: right;
+    min-width: 100px;
+    flex-shrink: 0;
+}
+
+.reminder-item.red .days-left {
+    color: #e74c3c;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.reminder-item.yellow .days-left {
+    color: #f39c12;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.followup-date {
+    display: block;
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 3px;
+}
+
+/* 空狀態提示 */
+.reminder-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: #888;
+}
+
+.reminder-empty-icon {
+    font-size: 2rem;
+    margin-right: 10px;
+    color: #27ae60;
+}
+
+.reminder-empty-text {
+    font-size: 1.1rem;
+}
+
+.gold-text-dark {
+    color: #B8860B;
+}
+
+/* 金色背景 */
+.gold-bg {
+    background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+}
+
+/* 金色邊框 */
+.gold-border {
+    border: 1px solid #D4AF37;
+}
+
+/* 金色光暈效果 */
+.gold-glow {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+/* 金色漸層背景 */
+.gold-gradient-bg {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+/* 白色卡片增強 */
+.white-card {
+    background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 
+                0 0 20px rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}

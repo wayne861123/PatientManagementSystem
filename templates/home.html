@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block header %}醫師列表{% endblock %}
+{% block container %}
+    <div class="grid">
+        {% for doctor in doctors %}
+        {% if doctor.disable == 1 %}
+        {% continue %}
+        {% endif %}
+        <a href="/doctor/{{ doctor.id }}">
+            <div class="card">
+                <h2>{{ doctor.name }}</h2>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    
+    <!-- 提醒區塊 -->
+    <div class="reminder-section">
+        <h2 class="reminder-title">🔔 提醒事項</h2>
+        <div class="reminder-list">
+            {% if reminders %}
+                {% for reminder in reminders %}
+                <a href="/patient/{{ reminder.patient_id }}" class="reminder-item {{ reminder.urgent_level }}">
+                    <div class="reminder-indicator {{ reminder.urgent_level }}">
+                        {% if reminder.urgent_level == 'red' %}
+                        <span class="urgent-icon">🚨</span>
+                        {% else %}
+                        <span class="urgent-icon">🟡</span>
+                        {% endif %}
+                    </div>
+                    <div class="reminder-content">
+                        <div class="reminder-patient">
+                            <strong>{{ reminder.patient_name }}</strong>
+                            <span class="patient-record-number" style="color: #666;">｜病歷號 {{ reminder.medical_record_number }}</span>
+                            <span class="patient-status" style="color: #666;">｜{{ reminder.status }}</span>
+                        </div>
+                        <div class="reminder-items">
+                            {% for item in reminder.reminder_items %}
+                                {% if item.reminder_type == 'followup' %}
+                                <span class="reminder-item-tag followup {% if item.days_left < 0 %}overdue{% endif %}">
+                                    {% if item.days_left < 0 %}
+                                    回診提醒：逾期{{ 0 - item.days_left }}天
+                                    {% else %}
+                                    回診提醒：{{ item.days_left }} 天後
+                                    {% endif %}
+                                </span>
+                                {% elif item.reminder_type == 'dose' %}
+                                <span class="reminder-item-tag dose {% if item.remain_dose == 0 %}red{% else %}yellow{% endif %}">
+                                    針數不足：{{ item.remain_dose }} 針
+                                </span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="reminder-doctor">
+                        {{ reminder.doctor_name }} 醫師
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <div class="reminder-empty">
+                    <span class="reminder-empty-icon">✓</span>
+                    <span class="reminder-empty-text">目前沒有提醒事項</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

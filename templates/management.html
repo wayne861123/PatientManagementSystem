@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block header %}
+    {% if type == "doctors" %}
+        醫師管理
+    {% elif type == "diseases" %}
+        疾病管理
+    {% elif type == "examinations" %}
+        檢查項目管理
+    {% elif type == "medicines" %}
+        藥物管理
+    {% endif %}
+{% endblock %}
+{% block container %}
+
+    <div class="grid">
+        <div class="add-button card sidebar-transparent" id="button-add">
+            {% if type == "doctors" %}
+                {% set button_string = "醫師" %}
+            {% elif type == "diseases" %}
+                {% set button_string = "疾病" %}
+            {% elif type == "examinations" %}
+                {% set button_string = "檢查項目" %}
+            {% elif type == "medicines" %}
+                {% set button_string = "藥物" %}
+            {% endif %}
+            <a href="javascript:void(0);" class="general-btn btn-white" onclick="toggleAddCard()">+ 新增{{ button_string }}</a>
+        </div>
+        {% if type == "doctors" %}
+            <div class="card hidden" id="card-add">
+                <!-- doctor add card -->
+                <input class="text-input" id="input-name" type="text" placeholder="醫師姓名">
+                <a href="javascript:void(0);" class="general-btn" onclick="updateManagement()">保存</a>
+                <a href="javascript:void(0);" class="general-btn" onclick="toggleAddCard()">取消</a>
+            </div>
+        {% elif type == "diseases" %}
+            <div class="card hidden" id="card-add">
+                <!-- disease add card -->
+                <input class="text-input" id="input-name" type="text" placeholder="疾病名稱">
+                <a href="javascript:void(0);" class="general-btn" onclick="updateManagement()">新增</a>
+                <a href="javascript:void(0);" class="general-btn" onclick="toggleAddCard()">取消</a>
+            </div>
+        {% elif type == "examinations" %}
+            <div class="card hidden" id="card-add">
+                <!-- examination add card -->
+                <input class="text-input" id="input-name" type="text" placeholder="檢查項目名稱">
+                <input class="text-input" id="input-interval" type="text" placeholder="檢查間隔週數">
+                <a href="javascript:void(0);" class="general-btn" onclick="updateManagement()">新增</a>
+                <a href="javascript:void(0);" class="general-btn" onclick="toggleAddCard()">取消</a>
+            </div>
+        {% elif type == "medicines" %}
+            <div class="card hidden" id="card-add">
+                <!-- medicine add card -->
+                    <input class="text-input" id="input-name" type="text" placeholder="藥物名稱">
+                <div class="form-group">
+                    <select id="select-medicine-type" onchange="selectMedicineType()" required>
+                        <option value="">請選擇類型</option>
+                        <option value="傳統用藥">傳統用藥</option>
+                        <option value="生物製劑">生物製劑</option>
+                    </select>
+                </div>
+                <input class="text-input hidden" id="input-interval" type="text" placeholder="回診間隔週數">
+                <input class="text-input hidden" id="first-apply-dose" type="text" placeholder="初審申請針數">
+                <input class="text-input hidden" id="continue-apply-dose" type="text" placeholder="續用申請針數">
+                <a href="javascript:void(0);" class="general-btn" onclick="updateManagement()">新增</a>
+                <a href="javascript:void(0);" class="general-btn" onclick="toggleAddCard()">取消</a>
+            </div>
+            <script>
+                function selectMedicineType() {
+                    const selectMedicineType = document.getElementById("select-medicine-type");
+                    const followupInterval = document.getElementById("input-interval");
+                    const firstApplyDose = document.getElementById("first-apply-dose");
+                    const continueApplyDose = document.getElementById("continue-apply-dose");
+                    followupInterval.classList.add("hidden");
+                    firstApplyDose.classList.add("hidden");
+                    continueApplyDose.classList.add("hidden");
+                    if (selectMedicineType.value === "傳統用藥") {
+                        followupInterval.classList.remove("hidden");
+                    } else if (selectMedicineType.value === "生物製劑") {
+                        firstApplyDose.classList.remove("hidden");
+                        continueApplyDose.classList.remove("hidden");
+                    }
+                }
+            </script>
+        {% endif %}
+    </div>
+    <div class="grid">
+        {% for item in items %}
+        {% if item.disable == 1 %}
+        {% continue %}
+        {% endif %}
+        <div class="card">
+            <h2>{{ item.name }}</h2>
+            {% if type == "examinations" %}
+                <h2>檢查間隔{{ item.interval }}週</h2>
+            {% elif type == "medicines" %}
+                <h2>{{ item.type }}</h2>
+                {% if item.type == "傳統用藥" %}
+                    <h2>回診間隔{{ item.followup_interval }}週</h2>
+                {% else %}
+                    <h2>初審申請{{ item.first_apply_dose }}支/<br>續用申請{{ item.continue_apply_dose }}支</h2>
+                {% endif %}
+            {% endif %}
+            <div class="mt-5">
+                {% if type == "doctors" %}
+                <a href="javascript:void(0);" class="general-btn" onclick="deleteCard('doctors', '{{ item.id }}')">刪除</a>
+                {% elif type == "diseases" %}
+                <a href="javascript:void(0);" class="general-btn" onclick="deleteCard('diseases', '{{ item.id }}')">刪除</a>
+                {% elif type == "examinations" %}
+                <a href="javascript:void(0);" class="general-btn" onclick="deleteCard('examinations', '{{ item.id }}')">刪除</a>
+                {% elif type == "medicines" %}
+                {% if item.type == "生物製劑" %}
+                <a href="javascript:void(0);" class="general-btn" onclick="deleteCard('biomedicines', '{{ item.id }}')">刪除</a>
+                {% elif item.type == "傳統用藥" %}
+                <a href="javascript:void(0);" class="general-btn" onclick="deleteCard('tradmedicines', '{{ item.id }}')">刪除</a>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function deleteCard(type, id) {
+            if (type === "doctors") {
+                url = "{{ url_for('api_delete_doctor' ) }}";
+            } else if (type === "diseases") {
+                url = "{{ url_for('api_delete_disease' ) }}";
+            } else if (type === "examinations") {
+                url = "{{ url_for('api_delete_examination' ) }}";
+            } else if (type === "tradmedicines" || type === "biomedicines") {
+                url = "{{ url_for('api_delete_medicine' ) }}";
+            }
+            fetch(`${url}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type":"application/json"
+                },
+                body: JSON.stringify({id, type})
+            }).then(
+                response => response.json()
+            ).then(
+                data => {
+                    if (data.success) {
+                        alert("刪除成功");
+                        location.reload();
+                    } else {
+                        alert("刪除失敗");
+                    }
+                }
+            ).catch(
+                error => {
+                    console.error("Error", error);
+                    alert("刪除失敗，請稍後再試");
+                }
+            )
+        }
+        function toggleAddCard() {
+            const buttonAdd = document.getElementById("button-add");
+            const cardAdd = document.getElementById("card-add");
+            buttonAdd.classList.toggle("hidden");
+            cardAdd.classList.toggle("hidden");
+            document.querySelectorAll("input").forEach(input => input.value = "");
+            document.querySelectorAll("select").forEach(select => {select.value = ""; select.dispatchEvent(new Event("change"))});
+        }
+        function updateManagement() {
+            const inputName = document.getElementById("input-name") ? document.getElementById("input-name").value.trim() : null;
+            const inputInterval = document.getElementById("input-interval") ? document.getElementById("input-interval").value.trim() : null;
+            const selectMedicineType = document.getElementById("select-medicine-type") ? document.getElementById("select-medicine-type").value.trim() : null;
+            const firstApplyDose = document.getElementById("first-apply-dose") ? document.getElementById("first-apply-dose").value.trim() : null;
+            const continueApplyDose = document.getElementById("continue-apply-dose") ? document.getElementById("continue-apply-dose").value.trim() : null;
+            var data = { };
+            if (!inputName) {
+                alert("請輸入名稱");
+                return ;
+            }
+            {% if type == "examinations" %}
+                if (!inputInterval || isNaN(inputInterval) ) {
+                    alert("請輸入檢查間隔週數，並確認為數字");
+                    return ;
+                }
+            {% elif type == "medicines" %}
+                if (!selectMedicineType) {
+                    alert("請選擇藥物類型");
+                    return ;
+                }
+                if (selectMedicineType === "傳統用藥") {
+                    if (isNaN(inputInterval) || !inputInterval) {
+                        alert("請輸入回診間隔週數，並確認為數字");
+                        return ;
+                    }
+                } else {
+                    if (isNaN(firstApplyDose) || !firstApplyDose || isNaN(continueApplyDose) || !continueApplyDose) {
+                        alert("請輸入申請針數，並確認為數字");
+                        return ;
+                    }
+                }
+            {% endif %}
+
+            fetch("{{ url_for('api_add_{}'.format(type)) }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ inputName, inputInterval, selectMedicineType, firstApplyDose, continueApplyDose })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("新增成功！");
+                    location.reload();
+                } else {
+                    alert("新增失敗：" + data.error);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("新增失敗，請稍後再試。");
+            });
+        }
+    </script>
+{% endblock %}

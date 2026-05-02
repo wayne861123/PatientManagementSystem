@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% block header %}病患檢查歷史紀錄{% endblock %}
+{% block container %}
+<div class="detail-card w-1000">
+    <h1 class="detail-patient-name">{{ patient.name }}</h1>
+    {% for his in examination_history %}
+    <form id="form-{{ his.id }}" class="exam-history-form">
+        <input type="hidden" name="id" value="{{ his.id }}" disabled>
+        <div class="exam-history-row">
+            <div class="exam-history-index">
+                <label>{{ loop.index }}</label>
+            </div>
+            <div class="exam-history-field">
+                <label>檢查項目</label>
+                <p class="exam-history-value">{{ his.name }}</p>
+            </div>
+            <div class="exam-history-field">
+                <label>檢查日期</label>
+                <input class="info-input" type="date" name="check_date" value="{{ his.check_date }}" disabled>
+            </div>
+            <div class="exam-history-field">
+                <label>檢查結果</label>
+                <select name="result" class="info-input" disabled>
+                    <option value="">-</option>
+                    <option value="negative" {{ 'selected' if his.result == 'negative' else '' }}>陰性</option>
+                    <option value="positive" {{ 'selected' if his.result == 'positive' else '' }}>陽性</option>
+                </select>
+            </div>
+            <div class="exam-history-field exam-history-remark">
+                <label>備註</label>
+                <textarea name="remark" class="textarea" disabled>{{ his.remark if his.remark else '' }}</textarea>
+            </div>
+            <div class="btn-group">
+                <a id="edit-btn-{{ his.id }}" href="javascript:void(0)" class="general-btn" onclick="enableRowEditing('{{ his.id }}')">編輯</a>
+                <a id="save-btn-{{ his.id }}" href="javascript:void(0)" class="general-btn hidden" onclick="saveRow('{{ his.id }}')">保存</a>
+                <a id="cancel-btn-{{ his.id }}" href="javascript:void(0)" class="general-btn hidden" onclick="cancelRow('{{ his.id }}')">取消</a>
+                <a id="delete-btn-{{ his.id }}" href="javascript:void(0);" class="general-btn" onclick="deleteHistory('{{ his.id }}')">刪除</a>
+            </div>
+        </div>
+    </form>
+    {% endfor%}
+</div>
+<style>
+    .exam-history-form {
+        margin-bottom: 15px;
+    }
+    .exam-history-row {
+        display: grid;
+        grid-template-columns: 40px 1fr 140px 120px 1fr auto;
+        gap: 10px;
+        padding: 15px;
+        background: #fafafa;
+        border-radius: 10px;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        align-items: center;
+    }
+    .exam-history-index {
+        text-align: center;
+        font-weight: bold;
+        color: #D4AF37;
+    }
+    .exam-history-field {
+        display: flex;
+        flex-direction: column;
+    }
+    .exam-history-field label {
+        font-size: 0.8rem;
+        color: #888;
+        margin-bottom: 4px;
+    }
+    .exam-history-value {
+        font-weight: 500;
+        color: #2C2C2C;
+    }
+    .exam-history-remark textarea {
+        min-height: 50px;
+        resize: none;
+    }
+    .exam-history-row .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        justify-content: center;
+    }
+    .exam-history-row .btn-group .general-btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+</style>
+<script>
+    // 儲存原始值，取消時恢復用
+    const originalValues = {};
+
+    function deleteHistory(id) {
+        if (!confirm("確定要刪除?")) {
+            return ;
+        }
+        const formData = new FormData();
+        formData.append("id", id);
+        fetch("{{ url_for('api_delete_examination_history') }}", {
+            method: "DELETE", 
+            body: formData
+        }).then(response => response.json()).then(data => {
+            if (data.success === false) {
+                return false;
+            }
+        })
+        alert("刪除成功!");
+        location.reload();
+    }
+
+    function enableRowEditing(rowId) {
+        const form = document.getElementById(`form-${rowId}`);
+        const editBtn = document.getElementById(`edit-btn-${rowId}`);
+        const saveBtn = document.getElementById(`save-btn-${rowId}`);
+        const cancelBtn = document.getElementById(`cancel-btn-${rowId}`);
+        const deleteBtn = document.getElementById(`delete-btn-${rowId}`);
+
+        // 儲存原始值
+        originalValues[rowId] = {};
+        form.querySelectorAll("input:not([type='hidden']), textarea, select").forEach(input => {
+            originalValues[rowId][input.name] = input.value;
+        });
+
+        // 切換按鈕顯示
+        editBtn.classList.add("hidden");
+        editBtn.classList.remove("inline-block");
+        saveBtn.classList.remove("hidden");
+        saveBtn.classList.add("inline-block");
+        cancelBtn.classList.remove("hidden");
+        cancelBtn.classList.add("inline-block");
+        deleteBtn.classList.add("hidden");
+        deleteBtn.classList.remove("inline-block");
+
+        // 啟用該列的編輯欄位（不包括 hidden input）
+        form.querySelectorAll("input:not([type='hidden']), textarea, select").forEach(input => {
+            input.disabled = false;
+        });
+    }
+
+    function saveRow(rowId) {
+        if (!confirm("確定要更新?")) {
+            return ;
+        }
+        const form = document.getElementById(`form-${rowId}`);
+        
+        // 启用所有 disabled 的元素（用于送出 FormData）
+        form.querySelectorAll("input, textarea, select").forEach(input => {
+            input.disabled = false;
+        });
+
+        // 先檢查驗證
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            // 恢復 disabled 狀態
+            form.querySelectorAll("input:not([type='hidden']), textarea, select").forEach(input => {
+                input.disabled = true;
+            });
+            return ;
+        }
+
+        fetch("{{ url_for('api_update_examination_history') }}", {
+            method: "POST", 
+            body: new FormData(form)
+        }).then(response => response.json()).then(data => {
+            if (data.success === false) {
+                alert("更新失敗: " + data.message);
+                return false;
+            }
+            alert("更新成功!");
+            location.reload();
+        }).catch(error => {
+            alert("更新失敗: " + error);
+        });
+    }
+
+    function cancelRow(rowId) {
+        const form = document.getElementById(`form-${rowId}`);
+        const editBtn = document.getElementById(`edit-btn-${rowId}`);
+        const saveBtn = document.getElementById(`save-btn-${rowId}`);
+        const cancelBtn = document.getElementById(`cancel-btn-${rowId}`);
+        const deleteBtn = document.getElementById(`delete-btn-${rowId}`);
+
+        // 恢復原始值
+        if (originalValues[rowId]) {
+            form.querySelectorAll("input, textarea, select").forEach(input => {
+                if (input.type !== 'hidden' && originalValues[rowId][input.name] !== undefined) {
+                    input.value = originalValues[rowId][input.name];
+                }
+            });
+        }
+
+        // 切換按鈕顯示
+        editBtn.classList.remove("hidden");
+        editBtn.classList.add("inline-block");
+        saveBtn.classList.add("hidden");
+        saveBtn.classList.remove("inline-block");
+        cancelBtn.classList.add("hidden");
+        cancelBtn.classList.remove("inline-block");
+        deleteBtn.classList.remove("hidden");
+        deleteBtn.classList.add("inline-block");
+
+        // 禁用該列的編輯欄位
+        form.querySelectorAll("input, textarea, select").forEach(input => {
+            if (input.type !== 'hidden') {
+                input.disabled = true;
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block header %}新增病患{% endblock %}
+{% block container %}
+<form method="POST" action="{{ url_for('add_patient') }}" class="center">
+    <div class="form-card">
+        <div class="form-section">
+            <h3>基本資料</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="required">姓名</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">身分證字號</label>
+                    <input type="text" name="id_number" placeholder="例：A123456789" required>
+                </div>
+                <div class="form-group">
+                    <label>性別</label>
+                    <div class="form-select">
+                        <select name="gender">
+                            <option value="">請選擇</option>
+                            <option value="男">男</option>
+                            <option value="女">女</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>生日</label>
+                    <input type="date" name="birthday" id="birthday">
+                </div>
+                <div class="form-group">
+                    <label class="required">狀態</label>
+                    <div class="form-select">
+                        <select name="status" required>
+                            <option value="評估中" selected>評估中</option>
+                            <option value="用藥中">用藥中</option>
+                            <option value="下車">下車</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="required">病例號</label>
+                    <input type="text" name="medical_record_number" placeholder="例：MR001" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">負責醫師</label>
+                    <div class="form-select">
+                        <select name="doctor_id" required>
+                            <option value="">請選擇</option>
+                            {% for doctor in doctors %}
+                                {% if doctor.id == doctor_id %}
+                                    <option value="{{ doctor.id }}" selected>{{ doctor.name }}</option>
+                                {% else %}
+                                    <option value="{{ doctor.id }}">{{ doctor.name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="required">疾病名稱</label>
+                    <div class="form-select">
+                        <select name="disease_id" required>
+                            <option value="">請選擇</option>
+                            {% for disease in diseases %}
+                                {% if disease.id == disease_id %}
+                                    <option value="{{ disease.id }}" selected>{{ disease.name }}</option>
+                                {% else %}
+                                    <option value="{{ disease.id }}">{{ disease.name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-section">
+            <h3>聯絡資訊</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>電話</label>
+                    <input type="tel" name="phone" placeholder="例：02-12345678">
+                </div>
+                <div class="form-group">
+                    <label>手機</label>
+                    <input type="tel" name="mobile" placeholder="例：0912-345678">
+                </div>
+            </div>
+            <div class="form-grid mt-15">
+                <div class="form-group">
+                    <label>縣市</label>
+                    <div class="form-select">
+                        <select id="city" name="city" onchange="updateDistricts()">
+                            <option value="">請選擇</option>
+                            <option value="台北市">台北市</option>
+                            <option value="新北市">新北市</option>
+                            <option value="桃園市">桃園市</option>
+                            <option value="台中市">台中市</option>
+                            <option value="台南市">台南市</option>
+                            <option value="高雄市">高雄市</option>
+                            <option value="新竹縣">新竹縣</option>
+                            <option value="苗栗縣">苗栗縣</option>
+                            <option value="彰化縣">彰化縣</option>
+                            <option value="南投縣">南投縣</option>
+                            <option value="雲林縣">雲林縣</option>
+                            <option value="嘉義縣">嘉義縣</option>
+                            <option value="屏東縣">屏東縣</option>
+                            <option value="宜蘭縣">宜蘭縣</option>
+                            <option value="花蓮縣">花蓮縣</option>
+                            <option value="台東縣">台東縣</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>鄉鎮市區</label>
+                    <div class="form-select">
+                        <select id="district" name="district">
+                            <option value="">請先選擇縣市</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="form-grid mt-15">
+                <div class="form-group full-width">
+                    <label>詳細地址</label>
+                    <input type="text" name="address" placeholder="路、巷、弄、樓等">
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="submit-btn">儲存病患資料</button>
+    </div>
+</form>
+{% if error %}
+<script>alert("{{ error }}")</script>
+{% endif %}
+{% endblock %}

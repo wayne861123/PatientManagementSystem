@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block header %}{{ doctor.name }} - {{ disease.name }} - 病患列表{% endblock %}
+{% block container %}
+<div class="grid">
+    <div class="add-button card sidebar-transparent" id="button-add">
+        <a href="{{ url_for('add_patient', doctor_id=doctor.id, disease_id=disease.id) }}" class="general-btn btn-white">+ 新增病患</a>
+    </div>
+</div>
+<div class="grid">
+    {% for patient in patients %}
+        <a href="{{ url_for('patient_detail', patient_id=patient.id) }}" class="patient-link">
+            <div class="patient-card">
+                <h3>{{ patient.name }}</h3>
+                <p><strong>病歷號：</strong>{{ patient.medical_record_number or '-' }}</p>
+                <p><strong>生日：</strong>{{ patient.birthday or '-' }}</p>
+            </div>
+        </a>
+    {% endfor %}
+</div>
+{% endblock %}

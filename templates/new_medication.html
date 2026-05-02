@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block container %}
+<a href="{{ url_for('patient_detail', doctor_id=doctor.id, disease_id=disease.id, patient_id=patient.id) }}" class="back-link">← 返回病人資料</a>
+<div class="form-card">
+    <!-- 基本資料 -->
+    <div class="info-section">
+        <h3>基本資料</h3>
+        <div class="info-grid">
+            <div class="info-item"><label>姓名</label><span>{{ patient.name or '-' }}</span></div>
+        </div>
+    </div>
+    <form method="POST" action="{{ url_for('add_medication', patient_id=patient.id, doctor_id=doctor.id, disease_id=disease.id) }}">
+        <div class="form-row">
+            <div class="form-group">
+                <label>用藥類型</label>
+                <select name="medicine_type" id="medicineType" required onchange="updateMedicineOptions()">
+                    <option value="">請選擇類型</option>
+                    <option value="傳統用藥">傳統用藥</option>
+                    <option value="生物製劑">生物製劑</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>用藥名稱</label>
+                <select name="medicine_name" id="medicineSelect" required disabled>
+                    <option value="">請先選擇用藥類型</option>
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="submit-btn">儲存</button>
+    </form>
+</div>
+
+<script>
+function updateMedicineOptions() {
+    const typeSelect = document.getElementById('medicineType');
+    const medicineSelect = document.getElementById('medicineSelect');
+    const selectedType = typeSelect.value;
+
+    if (!selectedType) {
+        medicineSelect.innerHTML = '<option value="">請先選擇用藥類型</option>';
+        medicineSelect.disabled = true;
+        return;
+    }
+
+    fetch('api/medicine/' + encodeURIComponent(selectedType))
+        .then(response => response.json())
+        .then(data => {
+            medicineSelect.innerHTML = '<option value="">請選擇藥品</option>';
+            data.medicines.forEach(medicine => {
+                const option = document.createElement('option');
+                option.value = medicine.name;
+                option.textContent = medicine.name;
+                medicineSelect.appendChild(option);
+            });
+            medicineSelect.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error fetching medicines:', error);
+        });
+}
+</script>
+{% endblock %}

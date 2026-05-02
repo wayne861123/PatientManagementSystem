@@ -1,0 +1,588 @@
+{% extends 'base.html' %}
+{% block header %}病患詳細資料{% endblock %}
+{% block container %}
+<div class="center">
+    <div class="detail-card w-1000">
+        <h1 class="detail-patient-name inline">{{ patient.name }}</h1>
+        <!-- 基本資料 -->
+        <form method="POST" id="info-form">
+            <input name="patient_id"  type="hidden" value="{{ patient.id }}" disabled>
+            <input name="name"  type="hidden" value="{{ patient.name }}" disabled>
+            <div class="info-section">
+                <h3 class="inline-block">基本資料</h3>
+                <div id="info-form-menu-button" class="inline-block">
+                    <a href="javascript:void(0)" class="general-btn btn-margin" onclick="toggleInfoForm()">編輯</a>
+                </div>
+                <div id="info-form-menu-button-enabled" class="hidden">
+                    <a href="javascript:void(0)" class="general-btn btn-margin" onclick="saveInfoForm()">保存</a>
+                    <a href="javascript:void(0)" class="general-btn btn-margin" onclick="cancelInfoForm()">取消</a>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item"><label>身分證字號</label>
+                        <input name="id_number" class="info-input" type="text" value="{{ patient.id_number or '-' }}" disabled>
+                    </div>
+                    <div class="info-item"><label>生日</label>
+                        <input name="birthday" class="info-input" type="date" value="{{ patient.birthday or '-' }}" disabled>
+                    </div>
+                    <div class="info-item"><label>年齡</label>
+                        <input class="info-input" type="text" value="{{ patient.age if patient.age else '-' }} 歲" disabled>
+                    </div>
+                    <div class="info-item"><label>病歷號</label>
+                        <input name="medical_record_number" class="info-input" type="text" value="{{ patient.medical_record_number or '-' }}" disabled>
+                    </div>
+                    <div class="info-item"><label>負責醫師</label>
+                        <input name="doctor" class="info-input" type="text" value="{{ patient.doctor_name if patient.doctor_name else '-' }}" disabled>
+                    </div>
+                    <div class="info-item"><label>疾病名稱</label>
+                        <input name="disease" class="info-input" type="text" value="{{ patient.disease_name if patient.disease_name else '-' }}" disabled>
+                    </div>
+                    <div class="info-item"><label>狀態</label>
+                        <select name="status" class="w-95" id="info-status" name="status" disabled>
+                            <option value="">未選擇</option>
+                            <option value="評估中">評估中</option>
+                            <option value="用藥中">用藥中</option>
+                            <option value="下車">下車</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <!-- 聯絡資訊 -->
+            <div class="info-section">
+                <h3>聯絡資訊</h3>
+                <div class="info-grid">
+                    <div class="info-item"><label>電話</label>
+                        <input name="phone" class="info-input" type="text" value="{{ patient.phone or '-' }}" disabled>
+                        <!-- <span>{{ patient.phone or '-' }}</span> -->
+                    </div>
+                    <div class="info-item"><label>手機</label>
+                        <input name="mobile" class="info-input" type="text" value="{{ patient.mobile or '-' }}" disabled>
+                        <!-- <span>{{ patient.mobile or '-' }}</span> -->
+                    </div>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item"><label>縣市</label>
+                        <select id="city" name="city" onchange="updateDistricts()" disabled>
+                            <option value="">請選擇</option>
+                            <option value="台北市">台北市</option>
+                            <option value="新北市">新北市</option>
+                            <option value="桃園市">桃園市</option>
+                            <option value="台中市">台中市</option>
+                            <option value="台南市">台南市</option>
+                            <option value="高雄市">高雄市</option>
+                            <option value="新竹縣">新竹縣</option>
+                            <option value="苗栗縣">苗栗縣</option>
+                            <option value="彰化縣">彰化縣</option>
+                            <option value="南投縣">南投縣</option>
+                            <option value="雲林縣">雲林縣</option>
+                            <option value="嘉義縣">嘉義縣</option>
+                            <option value="屏東縣">屏東縣</option>
+                            <option value="宜蘭縣">宜蘭縣</option>
+                            <option value="花蓮縣">花蓮縣</option>
+                            <option value="台東縣">台東縣</option>
+                        </select>
+                    </div>
+                    <div class="info-item"><label>鄉鎮市區</label>
+                        <select id="district" name="district" disabled>
+                            <option value="">請先選擇縣市</option>
+                        </select>
+                    </div>
+                    <div class="info-item full-width"><label>地址</label>
+                        <input name="address" class="info-input text-left w-100" type="text" value="{{ patient.address or '-' }}" disabled>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!-- 用藥紀錄 -->
+        <div class="info-section" id="medicine-record-section">
+            <div >
+                <h3 class="inline">療程用藥</h3>
+                <a href="{{ url_for('all_medicine_record', patient_id=patient.id) }}" class="general-btn btn-margin">歷史紀錄</a>
+            </div>
+            <div id="medicine-button-menu">
+                <a href="javascript:void(0)" class="general-btn btn-margin" onclick="toggleAddMedicine()">新增用藥</a>
+                <a href="javascript:void(0)" class="general-btn btn-margin" onclick="toggleAddFollowupRecord()">回診</a>
+            </div>
+            <div id="followup-record-button-menu" class="hidden">
+                <a href="javascript:void(0)" class="general-btn btn-margin" onclick="saveAddFollowupRecord()">保存</a>
+                <a href="javascript:void(0)" class="general-btn btn-margin" onclick="toggleAddFollowupRecord()">取消</a>
+            </div>
+            <div class="flex">
+                <div class="pr-20">
+                    <div class="card-grid">
+                        {% if last_medicine_record.type == "biological" %}
+                            {% set medicine_type = "生物製劑" %}
+                        {% elif last_medicine_record.type == "traditional" %}
+                            {% set medicine_type = "傳統用藥" %}
+                        {% else %}
+                            {% set medicine_type = "-" %}
+                        {% endif %}
+                        <div class="info-item"><label>藥物類型</label><span>{{ medicine_type }}</span></div>
+                        <div class="info-item"><label>藥物名稱</label><span>{{ last_medicine_record.name if last_medicine_record.name else '-' }}</span></div>
+                        {% if medicine_type == "生物製劑" %}
+                            <div class="info-item">
+                                <label>申請類型</label>
+                                {% if last_medicine_record.apply_type == "first" %}
+                                    <span>初審</span>
+                                {% else %}
+                                    <span>續用</span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="w-100 pb-20">
+                    <div class="info-item h-100 text-center">
+                        <label>療程就診紀錄</label>
+                        <div class="divider"></div>
+                        <div class="card-content-grid">
+                            <label>回診時間</label>
+                            <label>預計回診時間</label>
+                            <label>{% if medicine_type == "生物製劑" %}剩餘針數{% endif %}</label>
+                            <label>備註</label>
+                        </div>
+                        <form id="add-followup-record-form" method="POST" class="hidden" action="{{ url_for('api_add_followup_record') }}">
+                            <input type="hidden" name="patient-id" value="{{ last_medicine_record.patient_id }}">
+                            <input type="hidden" name="record-id" value="{{ last_medicine_record.record_id }}">
+                            <input type="hidden" name="name" value="{{ last_medicine_record.name }}">
+                            <input type="hidden" name="medicine-type" value="{{ last_medicine_record.type }}">
+                            <div class="card-content-grid">
+                                <div>
+                                    <input class="info-input" id="add-followup-record-followup-date" name="followup-date" type="date" required onchange="changeNextFollowupDateOfFollowup()">
+                                </div>
+                                <div>
+                                    <input class="info-input" id="add-next-followup-record-followup-date" name="next-followup-date" type="date" required>
+                                </div>
+                                <div>
+                                    {% if medicine_type == "生物製劑" %}
+                                        <input class="info-input" id="remain-dose" name="remain-dose" type="number" min="0" max="{{ last_medicine_record.remain_dose if last_medicine_record.remain_dose else 0 }}" value="{{ last_medicine_record.remain_dose if last_medicine_record.remain_dose else 0 }}" class="w-80" required>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <textarea class="info-textarea" name="remark"></textarea>
+                                </div>
+                            </div>
+                        </form>
+                        {% if medicine_record %}
+                            {% for record in medicine_record %}
+                                <div class="card-content-grid">
+                                    <div>
+                                            <input class="info-input" type="date" value="{{ record.followup_date if record.followup_date else '' }}" disabled>
+                                        </div>
+                                    <div>
+                                            <input class="info-input" type="date" value="{{ record.next_followup_date if record.next_followup_date else '' }}" disabled>
+                                    </div>
+                                    <div>
+                                        {% if medicine_type == "生物製劑" %}
+                                                <input class="info-input" type="number" value="{{ record.remain_dose }}" style="width: 80%;" disabled>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                            <textarea class="info-textarea" disabled>{{ record.remark if record.remark else '' }}</textarea>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 新增用藥紀錄 -->
+        <div class="info-section hidden" id="add-medicine-info">
+            <h3>用藥</h3>
+            <form method="POST" action="{{ url_for('api_add_medicine_record') }}" id="add-medicine-record-form">
+                <a href="javascript:void(0)" class="general-btn btn-margin" onclick="saveMedicineRecord()">保存</a>
+                <a href="javascript:void(0)" class="general-btn btn-margin" onclick="toggleAddMedicine()">取消</a>
+                <!-- <input type="hidden" name="record-id" value="{{ last_medicine_record.id if last_medicine_record else '' }}"> -->
+                <input type="hidden" name="patient-id" value="{{ patient.id }}">
+                <div class="grid w-100">
+                    <div class="info-item">
+                        <label>藥物類型</label>
+                        <select id="medicine-type" name="medicine-type" required onchange="selectMedinceType()">
+                            <option value="" selected>請選擇</option>
+                            <option value="traditional">傳統用藥</option>
+                            <option value="biological">生物製劑</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <label>藥物名稱</label>
+                        <select id="medicine-name" name="medicine-name" disabled required onchange="changeNextFollowupDate()">
+                            <option value="" selected>請選擇</option>
+                        </select>
+                    </div>
+                    <div class="info-item hidden" id="dose-info">
+                        <label>初審/續用</label>
+                        <select id="apply-type" name="apply-type" onchange="changeDoseCount()" required disabled>
+                            <option value="" selected>請選擇</option>
+                            <option value="first">初審</option>
+                            <option value="continue">續用</option>
+                        </select>
+                    </div>
+                    <div class="info-item hidden" id="dose-count">
+                        <label>申請針數</label>
+                        <input class="card-input" type="number" name="dose-count" id="dose-count-input" min="0" value="0" required>
+                    </div>
+                    <div class="info-item">
+                        <label>上次回診時間</label>
+                        <input class="card-input" type="date" id="last-followup-date" name="last-followup-date" required>
+                    </div>
+                    <div class="info-item">
+                        <label>下次回診時間</label>
+                        <input class="card-input" type="date" id="next-followup-date" name="next-followup-date" required>
+                    </div>
+                </div>
+                <div>
+                    <div class="info-item">
+                        <label>備註</label>
+                        <textarea class="textarea" id="remark" name="remark"></textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <!-- 檢查紀錄 -->
+        <div class="info-section" id="examination-record-section">
+            <div >
+                <h3 class="inline">檢查紀錄</h3>
+                <a href="{{ url_for('all_examination_record', patient_id=patient.id) }}" class="general-btn btn-margin">歷史紀錄</a>
+            </div>
+            <div class="">
+                {% for exam in examinations%}
+                <div class="info-item mb-20">
+                    <form id="exam-{{ exam.id }}" action="{{ url_for('api_add_exam_record') }}" method="POST">
+                        <div class="pb-10"><h4 class="exam-title">{{ exam.name }}</h4></div>
+                        <div class="examination-info-grid">
+                            <div>
+                                <label>檢查日期</label>
+                                {% set exam_record = examination_record_dict.get(exam.name) %}
+                                {% if exam_record %}
+                                <input class="info-input" name="exam-date" type="date" value="{{ exam_record[0]['check_date'] }}" required disabled>
+                                {% else %}
+                                <span id="no-record-date-{{ exam.id }}">尚未記錄</span>
+                                <input class="info-input hidden" name="exam-date" type="date" required disabled>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label>檢查結果</label>
+                                <select id="exam-result" name="exam-result" disabled required >
+                                    <option {{ 'selected' if not examination_record_dict.get(exam.name) else '' }}>-</option>
+                                    <option value="negative" {{ 'selected' if examination_record_dict.get(exam.name) and examination_record_dict.get(exam.name)[0]['result'] == 'negative' else '' }}>陰性</option>
+                                    <option value="positive" {{ 'selected' if examination_record_dict.get(exam.name) and examination_record_dict.get(exam.name)[0]['result'] == 'positive' else '' }}>陽性</option>
+                                </select>
+                            </div>
+                            <div><label>備註</label><textarea name="exam-remark" class="info-textarea h-100" disabled>{{ examination_record_dict.get(exam.name)[0]['remark'] if examination_record_dict.get(exam.name) else '' }}</textarea></div>
+                            <div>
+                                <a id="exam-checkbutton-{{ exam.id }}" class="general-btn" href="javascript:void(0);" onclick="checkButton('{{ exam.id }}')">新增紀錄</a>
+                                <a id="exam-savebutton-{{ exam.id }}" class="general-btn hidden" href="javascript:void(0);" onclick="saveButton('{{ exam.id }}')">保存</a>
+                                <a id="exam-cancelbutton-{{ exam.id }}" class="general-btn hidden" href="javascript:void(0);" onclick="cancelButton('{{ exam.id }}')">取消</a>
+                            </div>
+                        </div>
+                        <input type="hidden" name="patient-id" value="{{ patient.id }}" required>
+                        <input type="hidden" name="exam-name" value="{{ exam.name }}" required>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function saveButton(exam_id) {
+        const form = document.getElementById(`exam-${exam_id}`);
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        fetch("{{ url_for('api_add_exam_record') }}", {
+            method: "POST",
+            body: new FormData(form)
+        }).then(response => response.json()
+        ).then(data => {
+            if (data.success === true) {
+                alert("保存成功");
+                location.reload();
+            } else {
+                alert("保存失敗");
+            }
+        })
+        return;
+    }
+    function saveInfoForm() {
+        const form = document.getElementById("info-form");
+        if (!form.checkValidity()) {
+            form.reportValidity()
+            return;
+        }
+        fetch("{{ url_for('api_update_patient_info') }}", {
+            method: "POST", 
+            body: new FormData(form)
+        }).then(response => response.json()).then(data => {
+            if (data.success === true) {
+                alert("保存成功");
+                location.reload();
+            } else {
+                alert("保存失敗");
+            }
+        })
+        return;
+    }
+    function cancelInfoForm() {
+        location.reload();
+    }
+    function toggleInfoForm() {
+        const info_form = document.getElementById("info-form");
+        document.getElementById("info-form-menu-button").classList.toggle("hidden");
+        document.getElementById("info-form-menu-button").classList.toggle("inline-block");
+        document.getElementById("info-form-menu-button-enabled").classList.toggle("hidden");
+        document.getElementById("info-form-menu-button-enabled").classList.toggle("inline-block");
+        info_form.querySelectorAll("input").forEach(input => {
+            if (input.disabled) {
+                input.disabled = false;
+                if (input.value === "-") {
+                    input.value = "";
+                }
+            } else {
+                input.disabled = true;
+                if (input.value === "") {
+                    input.value = "-";
+                }
+            }
+        });
+        info_form.querySelectorAll("select").forEach(select => {
+            if (select.disabled) {
+                select.disabled = false;
+            } else {
+                select.disabled = true;
+            }
+        });
+    }
+    async function getTraditionalMedicineIntervalDays(medicineName) {
+        const response = await fetch("{{ url_for('api_get_medicine_intervals') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ medicine_name: medicineName })
+        });
+        const data = await response.json();
+        return data.intervals || 0;
+    }
+    async function changeNextFollowupDate() {
+        // Get followup interval by api
+        console.info("changeNextFollowupDate");
+        const medicineType = document.getElementById("medicine-type");
+        if (medicineType.value === "traditional") {
+            const lastFollowupDateInput = document.getElementById("last-followup-date");
+            const nextFollowupDateInput = document.getElementById("next-followup-date");
+            if (lastFollowupDateInput.value) {
+                const intervalDays = await getTraditionalMedicineIntervalDays(document.getElementById("medicine-name").value);
+                const lastFollowupDate = new Date();
+                lastFollowupDate.setDate(lastFollowupDate.getDate() + intervalDays*7); // Convert weeks to days
+                nextFollowupDateInput.value = lastFollowupDate.toLocaleDateString('en-CA');
+            }
+        } else if (medicineType.value === "biological" && document.getElementById("medicine-name").value != "") {
+            console.info("set apply-type to disabled")
+            document.getElementById("apply-type").disabled = false;
+        } else {
+            document.getElementById("apply-type").disabled = true;
+        }
+    }
+    async function changeNextFollowupDateOfFollowup() {
+        console.info("{{ last_medicine_record.type }}");
+        if ("{{ last_medicine_record.type }}" === "traditional") {
+            const element = document.getElementById("add-next-followup-record-followup-date");
+            const intervalDays = await getTraditionalMedicineIntervalDays("{{ last_medicine_record.name }}");
+            const followupDate = new Date(document.getElementById("add-followup-record-followup-date").value);
+            followupDate.setDate(followupDate.getDate() + intervalDays*7);
+            element.value = followupDate.toLocaleDateString('en-CA');
+        }
+    }
+    /**
+     * 根據申請類型更新針數顯示
+     * 從伺服器取得初審/續用針數設定
+     */
+    function changeDoseCount() {
+        const medicineName = document.getElementById("medicine-name").value;
+        const applyType = document.getElementById("apply-type").value;
+        const doseCountInput = document.getElementById("dose-count");
+        
+        if (!medicineName || !applyType) {
+            doseCountInput.value = "0";
+            return;
+        }
+        
+        // 這裡可以呼叫 API 取得對應的針數設定
+        // 現階段保持手動輸入
+        console.log(`藥物: ${medicineName}, 申請類型: ${applyType}`);
+        fetch("{{ url_for('api_get_dose_count') }}", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({medicineName, applyType})
+        }).then(response => response.json()
+        ).then(data => {
+            if (data.success === true) {
+                document.getElementById("dose-count-input").value = data.dose_count;
+                console.info(data);
+                return;
+            } else {
+                alert("獲取申請針數失敗");
+                return;
+            }
+        })
+    }
+    function toggleAddMedicine() {
+        const showInfo = document.getElementById("medicine-record-section");
+        const addInfo = document.getElementById("add-medicine-info");
+        showInfo.classList.toggle("hidden");
+        addInfo.classList.toggle("hidden");
+    }
+    function saveMedicineRecord() {
+        const form = document.getElementById("add-medicine-record-form");
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        fetch("{{ url_for('api_add_medicine_record') }}", {
+            method: "POST", 
+            body: new FormData(form)
+        }).then(response => response.json()).then(data => {
+            if (data.success === true) {
+                alert("新增成功");
+                location.reload();
+            } else {
+                alert("新增失敗");
+            }
+        })
+    }
+    function saveAddFollowupRecord() {
+        const form = document.getElementById("add-followup-record-form");
+        if (!form.checkValidity()) {
+            form.reportValidity()
+            return;
+        }
+        fetch("{{ url_for('api_add_followup_record') }}", {
+            method: "POST", 
+            body: new FormData(form)
+        }).then(response => response.json()).then(data => {
+            if (data.success === true) {
+                alert("新增成功");
+                location.reload();
+            } else {
+                alert("新增失敗");
+            }
+        })
+    }
+    function selectMedinceType() {
+        const medicineTypeSelect = document.getElementById("medicine-type");
+        const medicineNameSelect = document.getElementById("medicine-name");
+        const selectedType = medicineTypeSelect.value;
+        console.info(selectedType);
+        // 根據選擇的藥物類型更新藥物名稱選項
+        if (selectedType === "biological") {
+            medicineNameSelect.innerHTML = `
+                <option value="" selected>請選擇</option>
+                {% for medicine in biological_medicines %}
+                    {% if medicine.disable == 1 %}
+                    {% continue %}
+                    {% endif %}
+                    <option value="{{ medicine.name }}">{{ medicine.name }}</option>
+                {% endfor %}
+            `;
+            medicineNameSelect.disabled = false;
+            document.getElementById("dose-info").classList.remove("hidden");
+            document.getElementById("dose-count").classList.remove("hidden");
+            document.getElementById("next-followup-date").value = "";
+            document.getElementById("apply-type").required = true;
+            <!-- medicineNameSelect.onchange = null; -->
+        } else if (selectedType === "traditional") {
+            medicineNameSelect.innerHTML = `
+                <option value="" selected>請選擇</option>
+                {% for medicine in traditional_medicines %}
+                    {% if medicine.disable == 1 %}
+                    {% continue %}
+                    {% endif %}
+                    <option value="{{ medicine.name }}">{{ medicine.name }}</option>
+                {% endfor %}
+            `;
+            medicineNameSelect.disabled = false;
+            document.getElementById("dose-info").classList.add("hidden");
+            document.getElementById("dose-count").classList.add("hidden");
+            document.getElementById("apply-type").required = false;
+            medicineNameSelect.onchange = changeNextFollowupDate;
+        } else {
+            medicineNameSelect.innerHTML = `<option value="" selected>請選擇</option>`;
+            medicineNameSelect.disabled = true;
+        }
+    }
+    function toggleAddFollowupRecord() {
+        const followupRecordForm = document.getElementById("add-followup-record-form");
+        const medicineButtonMenu = document.getElementById("medicine-button-menu");
+        const followupRecordButtonMenu = document.getElementById("followup-record-button-menu");
+        followupRecordForm.classList.toggle("hidden");
+        medicineButtonMenu.classList.toggle("hidden");
+        followupRecordButtonMenu.classList.toggle("hidden");
+    }
+    /**
+     * 進入檢查編輯模式
+     * @param {string} exam_id - 檢查項目 ID
+     */
+    function checkButton(exam_id) {
+        const form = document.getElementById(`exam-${exam_id}`);
+        // 啟用表單中的所有 input、select、textarea
+        form.querySelectorAll("input").forEach(input => {
+            if (input.type !== "hidden") {
+                input.disabled = false;
+            }
+        });
+        form.querySelectorAll("select").forEach(select => {
+            select.disabled = false;
+        });
+        form.querySelectorAll("textarea").forEach(textarea => {
+            textarea.disabled = false;
+        });
+        // 如果存在「尚未記錄」的文字，隱藏並顯示 hidden 的 date input
+        const noRecordDate = document.getElementById(`no-record-date-${exam_id}`);
+        if (noRecordDate) {
+            noRecordDate.classList.add("hidden");
+            const dateInput = form.querySelector('input[name="exam-date"]');
+            if (dateInput) {
+                dateInput.classList.remove("hidden");
+                dateInput.value = new Date().toLocaleDateString('en-CA');
+            }
+        }
+        document.getElementById(`exam-checkbutton-${exam_id}`).classList.add("hidden");
+        document.getElementById(`exam-savebutton-${exam_id}`).classList.remove("hidden");
+        document.getElementById(`exam-cancelbutton-${exam_id}`).classList.remove("hidden");
+    }
+
+    /**
+     * 取消檢查編輯，重新載入頁面
+     * @param {string} exam_id - 檢查項目 ID
+     */
+    function cancelButton(exam_id) {
+        location.reload();
+    }
+
+    document.getElementById("last-followup-date").value = new Date().toLocaleDateString('en-CA');
+    document.getElementById("add-followup-record-followup-date").value = new Date().toLocaleDateString('en-CA');
+    {% if last_medicine_record.type == "traditional" %}
+        window.onload = async function() {
+            const intervalDays = await getTraditionalMedicineIntervalDays("{{ last_medicine_record.name }}");
+            const nextFollowupDate = new Date();
+            nextFollowupDate.setDate(nextFollowupDate.getDate() + intervalDays*7);
+            document.getElementById("add-next-followup-record-followup-date").value = nextFollowupDate.toLocaleDateString('en-CA');
+        }
+    {% endif %}
+    {% if patient.status == "評估中" %}
+        document.getElementById("info-status").value = "評估中";
+    {% elif patient.status == "用藥中" %}
+        document.getElementById("info-status").value = "用藥中";
+    {% elif patient.status == "下車" %}
+        document.getElementById("info-status").value = "下車";
+    {% endif %}
+    {% if patient.city %}
+        document.getElementById("city").value = "{{ patient.city }}";
+        document.getElementById("city").dispatchEvent(new Event("change"));
+        {% if patient.district %}
+            console.debug("update district")
+            document.getElementById("district").value = "{{ patient.district }}"
+        {% endif %}
+    {% endif %}
+</script>
+{% endblock %}

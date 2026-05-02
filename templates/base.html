@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>醫師門診管理系統</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</head>
+<body>
+    <div id="sidebar" class="sidebar sidebar-expand">
+        <ul>
+            <li>
+                <a href="javascript:void(0);" onclick="toggleSidebar()">
+                    <svg width="29" height="29" viewBox="0 0 29 29" fill="none" stroke="white" stroke-width="3">
+                        <line x1="0" y1="5" x2="29" y2="5"></line>
+                        <line x1="0" y1="15" x2="29" y2="15"></line>
+                        <line x1="0" y1="25" x2="29" y2="25"></line>
+                    </svg>
+                </a>
+            </li>
+            <li><a id="home-page" href="{{ url_for('home') }}">首頁</a></li>
+            <li><a id="management-doctor" href="{{ url_for('management_doctors') }}">醫師管理</a></li>
+            <li><a id="management-disease" href="{{ url_for('management_diseases') }}">疾病管理</a></li>
+            <li><a id="management-examination" href="{{ url_for('management_examinations') }}">檢查項目管理</a></li>
+            <li><a id="management-medicine" href="{{ url_for('management_medicines') }}">藥物管理</a></li>
+        </ul>
+    </div>
+    <div class="container">
+        <div class="header">
+            <h1 class="page-title">醫師門診管理系統</h1>
+            <h1 class="page-title">{% block header %}{% endblock %}</h1>
+        </div>
+        <div class="body center">
+            {% block container %}{% endblock %}
+        </div>
+    </div>
+    <div class="footer">
+
+    </div>
+    <!-- JavaScript functions are in static/script.js -->
+</body>
