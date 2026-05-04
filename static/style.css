@@ -335,7 +335,7 @@ select {
 /* 卡片內容行網格 */
 .card-content-grid {
     display: grid;
-    grid-template-columns: 120px 120px 100px auto;
+    grid-template-columns: 120px 120px 100px auto 100px;
     padding-bottom: 5px;
 }
 

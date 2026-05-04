@@ -140,6 +140,7 @@
                             <label>預計回診時間</label>
                             <label>{% if medicine_type == "生物製劑" %}剩餘針數{% endif %}</label>
                             <label>備註</label>
+                            <label>操作</label>
                         </div>
                         <form id="add-followup-record-form" method="POST" class="hidden" action="{{ url_for('api_add_followup_record') }}">
                             <input type="hidden" name="patient-id" value="{{ last_medicine_record.patient_id }}">
@@ -165,22 +166,33 @@
                         </form>
                         {% if medicine_record %}
                             {% for record in medicine_record %}
-                                <div class="card-content-grid">
-                                    <div>
-                                            <input class="info-input" type="date" value="{{ record.followup_date if record.followup_date else '' }}" disabled>
+                                <form id="followup-record-form-{{ record.id }}" class="followup-record-form" method="POST" action="{{ url_for('api_update_followup_record') }}">
+                                    <input type="hidden" name="record-id" value="{{ record.id }}">
+                                    <input type="hidden" name="patient-id" value="{{ record.patient_id }}">
+                                    <input type="hidden" name="name" value="{{ last_medicine_record.name }}">
+                                    <input type="hidden" name="medicine-type" value="{{ last_medicine_record.type }}">
+                                    <div class="card-content-grid">
+                                        <div>
+                                            <input class="info-input followup-input" name="followup-date" type="date" value="{{ record.followup_date if record.followup_date else '' }}" disabled required>
                                         </div>
-                                    <div>
-                                            <input class="info-input" type="date" value="{{ record.next_followup_date if record.next_followup_date else '' }}" disabled>
+                                        <div>
+                                            <input class="info-input followup-input" name="next-followup-date" type="date" value="{{ record.next_followup_date if record.next_followup_date else '' }}" disabled required>
+                                        </div>
+                                        <div>
+                                            {% if medicine_type == "生物製劑" %}
+                                                <input class="info-input followup-input" name="remain-dose" type="number" value="{{ record.remain_dose }}" style="width: 80%;" disabled required>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <textarea class="info-textarea followup-input" name="remark" disabled>{{ record.remark if record.remark else '' }}</textarea>
+                                        </div>
+                                        <div>
+                                            <a class="general-btn edit-followup-btn" href="javascript:void(0);" onclick="editFollowupRecord('{{ record.id }}')">編輯</a>
+                                            <a class="general-btn save-followup-btn hidden" href="javascript:void(0);" onclick="saveFollowupRecord('{{ record.id }}')">保存</a>
+                                            <a class="general-btn cancel-followup-btn hidden" href="javascript:void(0);" onclick="cancelFollowupRecord('{{ record.id }}')">取消</a>
+                                        </div>
                                     </div>
-                                    <div>
-                                        {% if medicine_type == "生物製劑" %}
-                                                <input class="info-input" type="number" value="{{ record.remain_dose }}" style="width: 80%;" disabled>
-                                        {% endif %}
-                                    </div>
-                                    <div>
-                                            <textarea class="info-textarea" disabled>{{ record.remark if record.remark else '' }}</textarea>
-                                    </div>
-                                </div>
+                                </form>
                             {% endfor %}
                         {% endif %}
                     </div>
@@ -476,6 +488,13 @@
             form.reportValidity()
             return;
         }
+        // 驗證預計回診時間不可小於本次回診時間
+        const followupDate = document.getElementById("add-followup-record-followup-date").value;
+        const nextFollowupDate = document.getElementById("add-next-followup-record-followup-date").value;
+        if (nextFollowupDate && followupDate && nextFollowupDate < followupDate) {
+            alert("預計回診時間不可小於本次回診時間");
+            return;
+        }
         fetch("{{ url_for('api_add_followup_record') }}", {
             method: "POST", 
             body: new FormData(form)
@@ -576,6 +595,55 @@
      * @param {string} exam_id - 檢查項目 ID
      */
     function cancelButton(exam_id) {
+        location.reload();
+    }
+
+    /**
+     * 進入回診記錄編輯模式
+     * @param {string} recordId - 回診記錄 ID
+     */
+    function editFollowupRecord(recordId) {
+        const form = document.getElementById(`followup-record-form-${recordId}`);
+        // 啟用表單中的所有 input、textarea
+        form.querySelectorAll(".followup-input").forEach(input => {
+            input.disabled = false;
+        });
+        // 切換按鈕顯示
+        form.querySelector(".edit-followup-btn").classList.add("hidden");
+        form.querySelector(".save-followup-btn").classList.remove("hidden");
+        form.querySelector(".cancel-followup-btn").classList.remove("hidden");
+    }
+
+    /**
+     * 保存回診記錄修改
+     * @param {string} recordId - 回診記錄 ID
+     */
+    function saveFollowupRecord(recordId) {
+        const form = document.getElementById(`followup-record-form-${recordId}`);
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        fetch("{{ url_for('api_update_followup_record') }}", {
+            method: "POST",
+            body: new FormData(form)
+        }).then(response => response.json()).then(data => {
+            if (data.success === true) {
+                alert("保存成功");
+                location.reload();
+            } else {
+                alert("保存失敗: " + (data.message || "未知錯誤"));
+            }
+        }).catch(error => {
+            alert("保存失敗: " + error);
+        });
+    }
+
+    /**
+     * 取消回診記錄編輯，重新載入頁面
+     * @param {string} recordId - 回診記錄 ID
+     */
+    function cancelFollowupRecord(recordId) {
         location.reload();
     }
 

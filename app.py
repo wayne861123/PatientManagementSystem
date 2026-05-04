@@ -1148,6 +1148,83 @@ def api_update_history():
     return {"success": True}
 
 
+@app.route("/api/update/followup_record", methods=["POST"])
+def api_update_followup_record():
+    """更新回診記錄 API"""
+    data = request.form
+    record_id = data.get("record-id")
+    patient_id = data.get("patient-id")
+    medicine_type = data.get("medicine-type")
+    followup_date = data.get("followup-date")
+    next_followup_date = data.get("next-followup-date")
+    remain_dose = data.get("remain-dose")
+    remark = data.get("remark")
+
+    # 必填欄位驗證
+    if not record_id:
+        return {"success": False, "message": "缺少記錄ID"}, 400
+    if not patient_id:
+        return {"success": False, "message": "缺少病患ID"}, 400
+    if not medicine_type:
+        return {"success": False, "message": "缺少藥物類型"}, 400
+
+    # 類型驗證 - 白名單
+    if medicine_type not in ("biological", "traditional"):
+        return {"success": False, "message": "無效的藥物類型"}, 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    table_name = "biological_medicine_record" if medicine_type == "biological" else "traditional_medicine_record"
+
+    # 取得舊資料
+    cursor.execute(f"SELECT * FROM {table_name} WHERE id = ? AND patient_id = ?", (record_id, patient_id))
+    old_data_row = cursor.fetchone()
+    if old_data_row is None:
+        conn.close()
+        return {"success": False, "message": "找不到記錄"}, 404
+    old_data = dict(old_data_row)
+
+    # 準備新資料
+    new_data = dict(old_data)
+    new_data["followup_date"] = followup_date if followup_date else old_data.get("followup_date")
+    new_data["next_followup_date"] = next_followup_date if next_followup_date else old_data.get("next_followup_date")
+    new_data["remark"] = remark if remark is not None else old_data.get("remark")
+
+    # 執行更新
+    if medicine_type == "biological":
+        new_data["remain_dose"] = remain_dose if remain_dose is not None else old_data.get("remain_dose")
+        cursor.execute("""
+            UPDATE biological_medicine_record
+            SET followup_date = ?, next_followup_date = ?, remain_dose = ?, remark = ?
+            WHERE id = ? AND patient_id = ?
+        """, (new_data["followup_date"], new_data["next_followup_date"], new_data["remain_dose"], new_data["remark"], record_id, patient_id))
+    else:
+        cursor.execute("""
+            UPDATE traditional_medicine_record
+            SET followup_date = ?, next_followup_date = ?, remark = ?
+            WHERE id = ? AND patient_id = ?
+        """, (new_data["followup_date"], new_data["next_followup_date"], new_data["remark"], record_id, patient_id))
+
+    conn.commit()
+
+    # 記錄審計日誌
+    log_db_action(
+        cursor,
+        action="UPDATE",
+        table_name=table_name,
+        record_id=record_id,
+        old_data=old_data,
+        new_data=new_data,
+        sql_statement=f"UPDATE {table_name} WHERE id = {record_id}",
+        operator="api",
+        ip_address=flask_request.remote_addr
+    )
+    conn.commit()
+    conn.close()
+    return {"success": True}
+
+
 # ===========================================================================
 # API 路由 - 刪除操作
 # ===========================================================================
