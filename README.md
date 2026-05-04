@@ -1,5 +1,7 @@
 # Patient Management System
 
+> ⚠️ **This project was created with AI assistance.**
+
 A Flask-based patient management system for tracking patient information, medical history, and doctor assignments.
 
 ## Features
