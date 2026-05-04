@@ -4,6 +4,7 @@
 <div class="center">
     <div class="detail-card w-1000">
         <h1 class="detail-patient-name inline">{{ patient.name }}</h1>
+        <a href="javascript:void(0)" class="general-btn delete-btn" onclick="deletePatient()">刪除病患</a>
         <!-- 基本資料 -->
         <form method="POST" id="info-form">
             <input name="patient_id"  type="hidden" value="{{ patient.id }}" disabled>
@@ -285,6 +286,25 @@
     </div>
 </div>
 <script>
+    function deletePatient() {
+        if (!confirm("確定要刪除此病患嗎？此操作無法復原。")) {
+            return;
+        }
+        fetch("{{ url_for('api_delete_patient') }}", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: {{ patient.id }} })
+        }).then(response => response.json()).then(data => {
+            if (data.success === true) {
+                alert("刪除成功");
+                window.location.href = "{{ url_for('doctor', doctor_id=patient.doctor_id) }}";
+            } else {
+                alert("刪除失敗: " + (data.message || "未知錯誤"));
+            }
+        }).catch(error => {
+            alert("刪除失敗: " + error);
+        });
+    }
     function saveButton(exam_id) {
         const form = document.getElementById(`exam-${exam_id}`);
         if (!form.checkValidity()) {

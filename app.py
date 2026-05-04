@@ -1412,6 +1412,100 @@ def api_delete_examination_history():
     return {"success": True}
 
 
+@app.route("/api/delete/patient", methods=["DELETE"])
+def api_delete_patient():
+    """刪除病患 API（連動刪除所有相關記錄）"""
+    data = request.get_json()
+    patient_id = data.get("id")
+
+    if not patient_id:
+        return {"success": False, "message": "缺少病患ID"}, 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 取得舊資料
+    cursor.execute("SELECT * FROM patients WHERE id = ?", (patient_id,))
+    old_data_row = cursor.fetchone()
+    if old_data_row is None:
+        conn.close()
+        return {"success": False, "message": "找不到病患"}, 404
+    old_data = dict(old_data_row)
+    
+    # 1. 刪除檢查記錄 (examination_record)
+    cursor.execute("SELECT * FROM examination_record WHERE patient_id = ?", (patient_id,))
+    exam_records = cursor.fetchall()
+    for record in exam_records:
+        record_data = dict(record)
+        cursor.execute("DELETE FROM examination_record WHERE id = ?", (record_data["id"],))
+        log_db_action(
+            cursor,
+            action="DELETE",
+            table_name="examination_record",
+            record_id=record_data["id"],
+            old_data=record_data,
+            new_data=None,
+            sql_statement=f"DELETE FROM examination_record WHERE id = {record_data['id']}",
+            operator="web",
+            ip_address=flask_request.remote_addr
+        )
+    
+    # 2. 刪除傳統用藥記錄 (traditional_medicine_record)
+    cursor.execute("SELECT * FROM traditional_medicine_record WHERE patient_id = ?", (patient_id,))
+    trad_records = cursor.fetchall()
+    for record in trad_records:
+        record_data = dict(record)
+        cursor.execute("DELETE FROM traditional_medicine_record WHERE id = ?", (record_data["id"],))
+        log_db_action(
+            cursor,
+            action="DELETE",
+            table_name="traditional_medicine_record",
+            record_id=record_data["id"],
+            old_data=record_data,
+            new_data=None,
+            sql_statement=f"DELETE FROM traditional_medicine_record WHERE id = {record_data['id']}",
+            operator="web",
+            ip_address=flask_request.remote_addr
+        )
+    
+    # 3. 刪除生物製劑記錄 (biological_medicine_record)
+    cursor.execute("SELECT * FROM biological_medicine_record WHERE patient_id = ?", (patient_id,))
+    bio_records = cursor.fetchall()
+    for record in bio_records:
+        record_data = dict(record)
+        cursor.execute("DELETE FROM biological_medicine_record WHERE id = ?", (record_data["id"],))
+        log_db_action(
+            cursor,
+            action="DELETE",
+            table_name="biological_medicine_record",
+            record_id=record_data["id"],
+            old_data=record_data,
+            new_data=None,
+            sql_statement=f"DELETE FROM biological_medicine_record WHERE id = {record_data['id']}",
+            operator="web",
+            ip_address=flask_request.remote_addr
+        )
+    
+    # 4. 刪除病患本身
+    cursor.execute("DELETE FROM patients WHERE id = ?", (patient_id,))
+    
+    # 記錄審計日誌
+    log_db_action(
+        cursor,
+        action="DELETE",
+        table_name="patients",
+        record_id=patient_id,
+        old_data=old_data,
+        new_data=None,
+        sql_statement=f"DELETE FROM patients WHERE id = {patient_id}",
+        operator="web",
+        ip_address=flask_request.remote_addr
+    )
+    conn.commit()
+    conn.close()
+    return {"success": True}
+
+
 @app.route("/api/delete/history", methods=["DELETE"])
 def api_delete_history():
     """刪除用藥歷史記錄 API"""
