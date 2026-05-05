@@ -108,6 +108,8 @@ def home():
         """, (patient_id,))
         patient_info = cursor.fetchone()
         if patient_info:
+            if patient_info["status"] == "下車":
+                continue
             patient_reminders[patient_id] = {
                 'patient_id': patient_id,
                 'patient_name': patient_info['patient_name'],

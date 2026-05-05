@@ -46,7 +46,7 @@
                                 </span>
                                 {% elif item.reminder_type == 'dose' %}
                                 <span class="reminder-item-tag dose {% if item.remain_dose == 0 %}red{% else %}yellow{% endif %}">
-                                    針數不足：{{ item.remain_dose }} 針
+                                    針數剩餘：{{ item.remain_dose }} 針
                                 </span>
                                 {% endif %}
                             {% endfor %}
