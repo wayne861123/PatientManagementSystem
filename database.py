@@ -57,7 +57,8 @@ TABLES = {
         "address": "TEXT",
         "doctor_id": "INTEGER",
         "disease_id": "INTEGER",
-        "status": "TEXT"
+        "status": "TEXT",
+        "remark": "TEXT"
     },
     "doctors": {
         "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -83,7 +84,8 @@ TABLES = {
         "name": "TEXT",
         "followup_date": "TEXT DEFAULT (datetime('now', 'localtime'))",
         "next_followup_date": "TEXT DEFAULT (datetime('now', 'localtime'))",
-        "remark": "TEXT"
+        "remark": "TEXT",
+        "additional_medicine": "TEXT"
     },
     "biological_medicines": {
         "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -102,7 +104,8 @@ TABLES = {
         "remain_dose": "INTEGER",
         "followup_date": "TEXT DEFAULT (datetime('now', 'localtime'))",
         "next_followup_date": "TEXT DEFAULT (datetime('now', 'localtime'))",
-        "remark": "TEXT"
+        "remark": "TEXT",
+        "additional_medicine": "TEXT"
     },
     "examinations": {
         "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -131,6 +134,31 @@ TABLES = {
         "operator": "TEXT DEFAULT 'system'",
         "created_at": "TEXT DEFAULT (datetime('now', 'localtime'))",
         "ip_address": "TEXT"
+    },
+    "pasi_records": {
+        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "patient_id": "INTEGER",
+        "pasi_score": "REAL",
+        "severity": "TEXT",
+        "erythema_head": "INTEGER",
+        "infiltrate_head": "INTEGER",
+        "desquamation_head": "INTEGER",
+        "area_head": "INTEGER",
+        "erythema_upper": "INTEGER",
+        "infiltrate_upper": "INTEGER",
+        "desquamation_upper": "INTEGER",
+        "area_upper": "INTEGER",
+        "erythema_trunk": "INTEGER",
+        "infiltrate_trunk": "INTEGER",
+        "desquamation_trunk": "INTEGER",
+        "area_trunk": "INTEGER",
+        "erythema_lower": "INTEGER",
+        "infiltrate_lower": "INTEGER",
+        "desquamation_lower": "INTEGER",
+        "area_lower": "INTEGER",
+        "image_path": "TEXT",
+        "remark": "TEXT",
+        "created_at": "TEXT DEFAULT (datetime('now', 'localtime'))"
     }
 }
 

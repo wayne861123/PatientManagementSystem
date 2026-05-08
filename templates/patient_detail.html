@@ -3,12 +3,10 @@
 {% block container %}
 <div class="center">
     <div class="detail-card w-1000">
-        <h1 class="detail-patient-name inline">{{ patient.name }}</h1>
         <a href="javascript:void(0)" class="general-btn delete-btn" onclick="deletePatient()">刪除病患</a>
         <!-- 基本資料 -->
         <form method="POST" id="info-form">
             <input name="patient_id"  type="hidden" value="{{ patient.id }}" disabled>
-            <input name="name"  type="hidden" value="{{ patient.name }}" disabled>
             <div class="info-section">
                 <h3 class="inline-block">基本資料</h3>
                 <div id="info-form-menu-button" class="inline-block">
@@ -19,6 +17,9 @@
                     <a href="javascript:void(0)" class="general-btn btn-margin" onclick="cancelInfoForm()">取消</a>
                 </div>
                 <div class="info-grid">
+                    <div class="info-item"><label>姓名</label>
+                        <input name="name" class="info-input" type="text" value="{{ patient.name }}" disabled>
+                    </div>
                     <div class="info-item"><label>身分證字號</label>
                         <input name="id_number" class="info-input" type="text" value="{{ patient.id_number or '-' }}" disabled>
                     </div>
@@ -26,7 +27,7 @@
                         <input name="birthday" class="info-input" type="date" value="{{ patient.birthday or '-' }}" disabled>
                     </div>
                     <div class="info-item"><label>年齡</label>
-                        <input class="info-input" type="text" value="{{ patient.age if patient.age else '-' }} 歲" disabled>
+                        <input name="age" class="info-input" type="text" value="{{ patient.age if patient.age else '-' }}" disabled>
                     </div>
                     <div class="info-item"><label>病歷號</label>
                         <input name="medical_record_number" class="info-input" type="text" value="{{ patient.medical_record_number or '-' }}" disabled>
@@ -44,6 +45,10 @@
                             <option value="用藥中">用藥中</option>
                             <option value="下車">下車</option>
                         </select>
+                    </div>
+                    <div class="info-item full-width">
+                        <label>備註</label>
+                        <textarea name="remark" class="info-textarea" disabled>{{ patient.remark if patient.remark else '' }}</textarea>
                     </div>
                 </div>
             </div>
@@ -128,6 +133,9 @@
                                     <span>續用</span>
                                 {% endif %}
                             </div>
+                            <div class="info-item"><label>額外藥物</label><span>{{ last_medicine_record.additional_medicine if last_medicine_record.additional_medicine else '-' }}</span></div>
+                        {% else %}
+                            <div class="info-item"><label>額外藥物</label><span>{{ last_medicine_record.additional_medicine if last_medicine_record.additional_medicine else '-' }}</span></div>
                         {% endif %}
                     </div>
                 </div>
@@ -147,6 +155,7 @@
                             <input type="hidden" name="record-id" value="{{ last_medicine_record.record_id }}">
                             <input type="hidden" name="name" value="{{ last_medicine_record.name }}">
                             <input type="hidden" name="medicine-type" value="{{ last_medicine_record.type }}">
+                            <input type="hidden" name="additional-medicine" value="{{ last_medicine_record.additional_medicine if last_medicine_record.additional_medicine else '' }}">
                             <div class="card-content-grid">
                                 <div>
                                     <input class="info-input" id="add-followup-record-followup-date" name="followup-date" type="date" required onchange="changeNextFollowupDateOfFollowup()">
@@ -241,6 +250,10 @@
                     <div class="info-item">
                         <label>下次回診時間</label>
                         <input class="card-input" type="date" id="next-followup-date" name="next-followup-date" required>
+                    </div>
+                    <div class="info-item">
+                        <label>額外藥物</label>
+                        <textarea class="textarea" id="additional-medicine" name="additional-medicine"></textarea>
                     </div>
                 </div>
                 <div>
@@ -366,6 +379,10 @@
         document.getElementById("info-form-menu-button-enabled").classList.toggle("hidden");
         document.getElementById("info-form-menu-button-enabled").classList.toggle("inline-block");
         info_form.querySelectorAll("input").forEach(input => {
+            // 跳過年齡欄位（由生日計算得出，不可編輯）
+            if (input.name === "age") {
+                return;
+            }
             if (input.disabled) {
                 input.disabled = false;
                 if (input.value === "-") {
@@ -383,6 +400,13 @@
                 select.disabled = false;
             } else {
                 select.disabled = true;
+            }
+        });
+        info_form.querySelectorAll("textarea").forEach(textarea => {
+            if (textarea.disabled) {
+                textarea.disabled = false;
+            } else {
+                textarea.disabled = true;
             }
         });
     }

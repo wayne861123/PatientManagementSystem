@@ -214,6 +214,12 @@ def management_medicines():
     return render_template("management.html", type="medicines", items=traditional_medicines + biological_medicines)
 
 
+@app.route("/pasi")
+def pasi_score():
+    """PASI分數試算頁面"""
+    return render_template("pasi_score.html")
+
+
 # ===========================================================================
 # 頁面路由 - 醫師與病患
 # ===========================================================================
@@ -281,16 +287,44 @@ def patient_detail(patient_id):
     if birthday:
         patient["birthday"] = birthday
 
-    # 計算年齡
+    # 計算年齡（格式：X歲Y個月Z天）
     if patient and patient['birthday']:
         try:
             birth_date = datetime.strptime(patient['birthday'], '%Y-%m-%d')
             today = datetime.now()
-            age = today.year - birth_date.year
-            # 如果生日還沒到，年齡減一
-            if (today.month, today.day) < (birth_date.month, birth_date.day):
-                age -= 1
-            patient['age'] = age
+            
+            # 計算年、月、日
+            years = today.year - birth_date.year
+            months = today.month - birth_date.month
+            days = today.day - birth_date.day
+            
+            # 處理負的天數
+            if days < 0:
+                months -= 1
+                # 取得上個月的最後一天
+                import calendar
+                last_month = today.month - 1 if today.month > 1 else 12
+                year_for_month = today.year if today.month > 1 else today.year - 1
+                days += calendar.monthrange(year_for_month, last_month)[1]
+            
+            # 處理負的月數
+            if months < 0:
+                years -= 1
+                months += 12
+            
+            # 格式化年齡字串
+            if years > 0:
+                if months > 0 or days > 0:
+                    patient['age'] = f"{years}歲 {months}個月 {days}天"
+                else:
+                    patient['age'] = f"{years}歲"
+            elif months > 0:
+                if days > 0:
+                    patient['age'] = f"{months}個月 {days}天"
+                else:
+                    patient['age'] = f"{months}個月"
+            else:
+                patient['age'] = f"{days}天"
         except Exception:
             pass
 
@@ -499,6 +533,7 @@ def add_patient():
         district = data["district"]
         address = data["address"]
         status = data["status"]
+        remark = data.get("remark", "")
 
         # 檢查病患是否已存在
         cursor.execute("SELECT id FROM patients WHERE id_number = ?", (id_number,))
@@ -516,12 +551,12 @@ def add_patient():
             "name": name, "gender": gender, "birthday": birthday, "phone": phone, 
             "mobile": mobile, "medical_record_number": medical_record_number, 
             "id_number": id_number, "city": city, "district": district, "address": address,
-            "doctor_id": doctor_id, "disease_id": disease_id, "status": status
+            "doctor_id": doctor_id, "disease_id": disease_id, "status": status, "remark": remark
         }
         cursor.execute("""INSERT INTO patients
-        (name, gender, birthday, phone, mobile, medical_record_number, id_number, city, district, address, doctor_id, disease_id, status) VALUES
-        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                      (name, gender, birthday, phone, mobile, medical_record_number, id_number, city, district, address, doctor_id, disease_id, status))
+        (name, gender, birthday, phone, mobile, medical_record_number, id_number, city, district, address, doctor_id, disease_id, status, remark) VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                      (name, gender, birthday, phone, mobile, medical_record_number, id_number, city, district, address, doctor_id, disease_id, status, remark))
         record_id = cursor.lastrowid
         new_patient_data["id"] = record_id
         conn.commit()
@@ -767,6 +802,7 @@ def api_add_medicine_record():
     next_followup_date = data.get("next-followup-date")
     dose = data.get("dose")
     remark = data.get("remark")
+    additional_medicine = data.get("additional-medicine")
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -794,12 +830,12 @@ def api_add_medicine_record():
     new_data = {}
     if medicine_type == "traditional":
         cursor.execute("""
-            INSERT INTO traditional_medicine_record (record_id, patient_id, name, followup_date, next_followup_date, remark)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (record_id, patient_id, medicine_name, last_followup_date, next_followup_date, remark))
+            INSERT INTO traditional_medicine_record (record_id, patient_id, name, followup_date, next_followup_date, remark, additional_medicine)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (record_id, patient_id, medicine_name, last_followup_date, next_followup_date, remark, additional_medicine or ""))
         table_name = "traditional_medicine_record"
         new_data = {"record_id": record_id, "patient_id": patient_id, "name": medicine_name, 
-                   "followup_date": last_followup_date, "next_followup_date": next_followup_date, "remark": remark}
+                   "followup_date": last_followup_date, "next_followup_date": next_followup_date, "remark": remark, "additional_medicine": additional_medicine or ""}
 
     elif medicine_type == "biological":
         # 取得初始針數 - 使用白名單驗證欄位名稱
@@ -815,13 +851,13 @@ def api_add_medicine_record():
             return {"success": False, "message": "找不到指定的藥物"}
 
         cursor.execute("""
-            INSERT INTO biological_medicine_record (record_id, patient_id, name, apply_type, remain_dose, followup_date, next_followup_date, remark)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (record_id, patient_id, medicine_name, apply_type, biological_medicine["apply_dose"], last_followup_date, next_followup_date, remark))
+            INSERT INTO biological_medicine_record (record_id, patient_id, name, apply_type, remain_dose, followup_date, next_followup_date, remark, additional_medicine)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (record_id, patient_id, medicine_name, apply_type, biological_medicine["apply_dose"], last_followup_date, next_followup_date, remark, additional_medicine or ""))
         table_name = "biological_medicine_record"
         new_data = {"record_id": record_id, "patient_id": patient_id, "name": medicine_name,
                    "apply_type": apply_type, "remain_dose": biological_medicine["apply_dose"],
-                   "followup_date": last_followup_date, "next_followup_date": next_followup_date, "remark": remark}
+                   "followup_date": last_followup_date, "next_followup_date": next_followup_date, "remark": remark, "additional_medicine": additional_medicine or ""}
 
     record_id_db = cursor.lastrowid
     new_data["id"] = record_id_db
@@ -856,6 +892,7 @@ def api_add_followup_record():
     remark = data.get("remark")
     medicine_type = data.get("medicine-type")
     remain_dose = data.get("remain-dose")
+    additional_medicine = data.get("additional-medicine")
 
     # 必填欄位驗證
     if not all([patient_id, record_id, name, followup_date, next_followup_date, medicine_type]):
@@ -872,21 +909,21 @@ def api_add_followup_record():
     new_data = {}
     if medicine_type == "biological":
         cursor.execute("""
-            INSERT INTO biological_medicine_record (record_id, patient_id, name, remain_dose, followup_date, next_followup_date, remark)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (record_id, patient_id, name, remain_dose, followup_date, next_followup_date, remark or ""))
+            INSERT INTO biological_medicine_record (record_id, patient_id, name, remain_dose, followup_date, next_followup_date, remark, additional_medicine)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (record_id, patient_id, name, remain_dose, followup_date, next_followup_date, remark or "", additional_medicine or ""))
         table_name = "biological_medicine_record"
         new_data = {"record_id": record_id, "patient_id": patient_id, "name": name,
                    "remain_dose": remain_dose, "followup_date": followup_date, 
-                   "next_followup_date": next_followup_date, "remark": remark or ""}
+                   "next_followup_date": next_followup_date, "remark": remark or "", "additional_medicine": additional_medicine or ""}
     else:
         cursor.execute("""
-            INSERT INTO traditional_medicine_record (record_id, patient_id, name, followup_date, next_followup_date, remark)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (record_id, patient_id, name, followup_date, next_followup_date, remark or ""))
+            INSERT INTO traditional_medicine_record (record_id, patient_id, name, followup_date, next_followup_date, remark, additional_medicine)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (record_id, patient_id, name, followup_date, next_followup_date, remark or "", additional_medicine or ""))
         table_name = "traditional_medicine_record"
         new_data = {"record_id": record_id, "patient_id": patient_id, "name": name,
-                   "followup_date": followup_date, "next_followup_date": next_followup_date, "remark": remark or ""}
+                   "followup_date": followup_date, "next_followup_date": next_followup_date, "remark": remark or "", "additional_medicine": additional_medicine or ""}
 
     record_id_db = cursor.lastrowid
     new_data["id"] = record_id_db
@@ -1021,6 +1058,7 @@ def api_update_patient_info():
     doctor = data.get("doctor")
     disease = data.get("disease")
     status = data.get("status")
+    remark = data.get("remark")
 
     # 必填欄位驗證
     if not patient_id:
@@ -1060,17 +1098,17 @@ def api_update_patient_info():
     new_data = {
         "id": patient_id, "name": name, "birthday": birthday_formatted, "phone": phone, "mobile": mobile,
         "medical_record_number": medical_record_number, "id_number": id_number, "city": city,
-        "district": district, "address": address, "doctor_id": doctor_id, "disease_id": disease_id, "status": status
+        "district": district, "address": address, "doctor_id": doctor_id, "disease_id": disease_id, "status": status, "remark": remark
     }
 
     # 更新病患資料
     cursor.execute("""
         UPDATE patients
         SET name = ?, birthday = ?, phone = ?, mobile = ?, medical_record_number = ?, id_number = ?,
-            city = ?, district = ?, address = ?, doctor_id = ?, disease_id = ?, status = ?
+            city = ?, district = ?, address = ?, doctor_id = ?, disease_id = ?, status = ?, remark = ?
         WHERE id = ?
     """, (name, birthday_formatted, phone, mobile, medical_record_number, id_number, city, district, address,
-          doctor_id, disease_id, status, patient_id))
+          doctor_id, disease_id, status, remark, patient_id))
     conn.commit()
     
     # 記錄審計日誌
@@ -1634,6 +1672,96 @@ def api_delete_history():
     conn.commit()
     conn.close()
     return {"success": True}
+
+
+# ===========================================================================
+# API 路由 - PASI 分數儲存
+# ===========================================================================
+
+@app.route("/api/pasi/save", methods=["POST"])
+def api_pasi_save():
+    """儲存 PASI 分數記錄"""
+    from werkzeug.utils import secure_filename
+    import os
+    import uuid
+    import json
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 先建立 PASI 記錄以取得 id
+    pasi_score_val = request.form.get('pasi_score', 0, type=float)
+    severity = request.form.get('severity', '')
+    remark = request.form.get('remark', '')
+    
+    regions = ['head', 'upper', 'trunk', 'lower']
+    record_data = {'pasi_score': pasi_score_val, 'severity': severity, 'remark': remark}
+    
+    for region in regions:
+        record_data[f'erythema_{region}'] = request.form.get(f'erythema_{region}', 0, type=int)
+        record_data[f'infiltrate_{region}'] = request.form.get(f'infiltrate_{region}', 0, type=int)
+        record_data[f'desquamation_{region}'] = request.form.get(f'desquamation_{region}', 0, type=int)
+        record_data[f'area_{region}'] = request.form.get(f'area_{region}', 0, type=int)
+    
+    # 先插入空白記錄取得 id
+    cursor.execute("""
+        INSERT INTO pasi_records (
+            pasi_score, severity,
+            erythema_head, infiltrate_head, desquamation_head, area_head,
+            erythema_upper, infiltrate_upper, desquamation_upper, area_upper,
+            erythema_trunk, infiltrate_trunk, desquamation_trunk, area_trunk,
+            erythema_lower, infiltrate_lower, desquamation_lower, area_lower,
+            image_path, remark
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        record_data['pasi_score'], record_data['severity'],
+        record_data['erythema_head'], record_data['infiltrate_head'], record_data['desquamation_head'], record_data['area_head'],
+        record_data['erythema_upper'], record_data['infiltrate_upper'], record_data['desquamation_upper'], record_data['area_upper'],
+        record_data['erythema_trunk'], record_data['infiltrate_trunk'], record_data['desquamation_trunk'], record_data['area_trunk'],
+        record_data['erythema_lower'], record_data['infiltrate_lower'], record_data['desquamation_lower'], record_data['area_lower'],
+        None, record_data['remark']
+    ))
+    
+    record_id = cursor.lastrowid
+    
+    # 處理多張圖片上傳 - 同一批放在同一資料夾
+    image_files = request.files.getlist('images')
+    image_paths = []
+    
+    if image_files:
+        # 用 record_id 建立資料夾
+        record_dir = f"pasi_record_{record_id}"
+        upload_dir = os.path.join(os.path.dirname(__file__), "static", "uploads", "pasi", record_dir)
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        for idx, image_file in enumerate(image_files):
+            if image_file and image_file.filename:
+                filename = secure_filename(image_file.filename)
+                ext = filename.rsplit('.', 1)[-1] if '.' in filename else 'jpg'
+                unique_filename = f"img_{idx + 1}.{ext}"
+                file_path = os.path.join(upload_dir, unique_filename)
+                image_file.save(file_path)
+                image_paths.append(f"uploads/pasi/{record_dir}/{unique_filename}")
+    
+    # 更新記錄的 image_path
+    image_path_json = json.dumps(image_paths) if image_paths else None
+    if image_paths:
+        cursor.execute("UPDATE pasi_records SET image_path = ? WHERE id = ?", (image_path_json, record_id))
+    
+    record_data['image_path'] = image_path_json
+    record_data['id'] = record_id
+    
+    log_db_action(
+        cursor, action="INSERT", table_name="pasi_records", record_id=record_id,
+        old_data=None, new_data=record_data, sql_statement="INSERT INTO pasi_records ...",
+        operator="web", ip_address=flask_request.remote_addr
+    )
+    
+    conn.commit()
+    conn.close()
+    
+    logger.info(f"PASI 記錄已儲存: id={record_id}, score={pasi_score_val}")
+    return {"success": True, "id": record_id}
 
 
 # ===========================================================================

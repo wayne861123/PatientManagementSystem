@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+
+{% block header %}PASI 分數計算機{% endblock %}
+
+{% block container %}
+<div class="pasi-container">
+    <!-- PASI 說明區塊（可收折） -->
+    <div class="pasi-info" id="pasiInfoSection">
+        <div class="info-header" onclick="toggleInfoSection()">
+            <h3>PASI（Psoriasis Area and Severity Index）評分方式</h3>
+            <span class="toggle-icon" id="toggleIcon">▶</span>
+        </div>
+        <div class="info-content collapsed" id="infoContent">
+        <p>PASI 是評估乾癬嚴重程度的標準指標，分數範圍 0-72 分。</p>
+        
+        <h4>身體四個區域</h4>
+        <table class="info-table">
+            <tr><th>區域</th><th>權重</th></tr>
+            <tr><td>頭部 (H)</td><td>10%</td></tr>
+            <tr><td>上肢 (U)</td><td>20%</td></tr>
+            <tr><td>軀幹 (T)</td><td>30%</td></tr>
+            <tr><td>下肢 (L)</td><td>40%</td></tr>
+        </table>
+        
+        <h4>每個區域評估項目（各 0-4 分）</h4>
+        <ul>
+            <li><strong>紅斑 (Erythema, E)</strong>：0=無紅斑、1=輕微、2=中等、3=嚴重、4=極嚴重</li>
+            <li><strong>浸潤 (Infiltration, I)</strong>：0=無浸潤、1=輕微、2=中等、3=嚴重、4=極嚴重</li>
+            <li><strong>鱗屑 (Desquamation, D)</strong>：0=無鱗屑、1=輕微、2=中等、3=嚴重、4=極嚴重</li>
+        </ul>
+        
+        <h4>病灶面積 (A)：0-6 分</h4>
+        <table class="info-table">
+            <tr><th>分數</th><th>病灶面積</th></tr>
+            <tr><td>0</td><td>無病灶</td></tr>
+            <tr><td>1</td><td><10%</td></tr>
+            <tr><td>2</td><td>10-29%</td></tr>
+            <tr><td>3</td><td>30-49%</td></tr>
+            <tr><td>4</td><td>50-69%</td></tr>
+            <tr><td>5</td><td>70-89%</td></tr>
+            <tr><td>6</td><td>90-100%</td></tr>
+        </table>
+        
+        <h4>計算公式</h4>
+        <p class="formula">PASI = 0.1×(E_H+I_H+D_H)×A_H + 0.2×(E_U+I_U+D_U)×A_U + 0.3×(E_T+I_T+D_T)×A_T + 0.4×(E_L+I_L+D_L)×A_L</p>
+        
+        <h4>嚴重程度分級</h4>
+        <table class="info-table">
+            <tr><th>PASI 分數</th><th>嚴重程度</th></tr>
+            <tr><td>0</td><td>無症狀</td></tr>
+            <tr><td>0.1-4.9</td><td>輕度</td></tr>
+            <tr><td>5-9.9</td><td>中度</td></tr>
+            <tr><td>10-14.9</td><td>重度</td></tr>
+            <tr><td>≥15</td><td>極重度</td></tr>
+        </table>
+        </div>
+    </div>
+
+    <!-- PASI 計算機 -->
+    <div class="pasi-calculator">
+        <h3>PASI 分數計算</h3>
+        
+        <form id="pasiForm">
+            <!-- 頭部 -->
+            <div class="region-section">
+                <h4>頭部 (H) - 權重 10%</h4>
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label>紅斑 (E)</label>
+                        <select name="erythema_head" data-region="head" data-type="erythema">
+                            <option value="0">0 - 無</option>
+                            <option value="1">1 - 輕微</option>
+                            <option value="2">2 - 中等</option>
+                            <option value="3">3 - 嚴重</option>
+                            <option value="4">4 - 極嚴重</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>浸潤 (I)</label>
+                        <select name="infiltrate_head" data-region="head" data-type="infiltrate">
+                            <option value="0">0 - 無</option>
+                            <option value="1">1 - 輕微</option>
+                            <option value="2">2 - 中等</option>
+                            <option value="3">3 - 嚴重</option>
+                            <option value="4">4 - 極嚴重</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>鱗屑 (D)</label>
+                        <select name="desquamation_head" data-region="head" data-type="desquamation">
+                            <option value="0">0 - 無</option>
+                            <option value="1">1 - 輕微</option>
+                            <option value="2">2 - 中等</option>
+                            <option value="3">3 - 嚴重</option>
+                            <option value="4">4 - 極嚴重</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>面積 (A)</label>
+                        <select name="area_head" data-region="head" data-type="area">
+                            <option value="0">0 - 無病灶</option>
+                            <option value="1">1 - <10%</option>
+                            <option value="2">2 - 10-29%</option>
+                            <option value="3">3 - 30-49%</option>
+                            <option value="4">4 - 50-69%</option>
+                            <option value="5">5 - 70-89%</option>
+                            <option value="6">6 - 90-100%</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 上肢 -->
+            <div class="region-section">
+                <h4>上肢 (U) - 權重 20%</h4>
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label>紅斑 (E)</label>
+                        <select name="erythema_upper" data-region="upper" data-type="erythema">
+                            <option value="0">0 - 無</option>
+                            <option value="1">1 - 輕微</option>
+                            <option value="2">2 - 中等</option>
+                            <option value="3">3 - 嚴重</option>
+                            <option value="4">4 - 極嚴重</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>浸潤 (I)</label>
+                        <select name="infiltrate_upper" data-region="upper" data-type="infiltrate">
+                            <option value="0">0 - 無</option>
+                            <option value="1">1 - 輕微</option>
+                            <option value="2">2 - 中等</option>
+                            <option value="3">3 - 嚴重</option>
+                            <option value="4">4 - 極嚴重</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>鱗屑 (D)</label>
+                        <select name="desquamation_upper" data-region="upper" data-type="desquamation">
+                            <option value="0">0 - 無</option>
+                            <option value="1">1 - 輕微</option>
+                            <option value="2">2 - 中等</option>
+                            <option value="3">3 - 嚴重</option>
+                            <option value="4">4 - 極嚴重</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>面積 (A)</label>
+                        <select name="area_upper" data-region="upper" data-type="area">
+                            <option value="0">0 - 無病灶</option>
+                            <option value="1">1 - <10%</option>
+                            <option value="2">2 - 10-29%</option>
+                            <option value="3">3 - 30-49%</option>
+                            <option value="4">4 - 50-69%</option>
+                            <option value="5">5 - 70-89%</option>
+                            <option value="6">6 - 90-100%</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 軀幹 -->
+            <div class="region-section">
+                <h4>軀幹 (T) - 權重 30%</h4>
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label>紅斑 (E)</label>
+                        <select name="erythema_trunk" data-region="trunk" data-type="erythema">
+                            <option value="0">0 - 無</option>
+                            <option value="1">1 - 輕微</option>
+                            <option value="2">2 - 中等</option>
+                            <option value="3">3 - 嚴重</option>
+                            <option value="4">4 - 極嚴重</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>浸潤 (I)</label>
+                        <select name="infiltrate_trunk" data-region="trunk" data-type="infiltrate">
+                            <option value="0">0 - 無</option>
+                            <option value="1">1 - 輕微</option>
+                            <option value="2">2 - 中等</option>
+                            <option value="3">3 - 嚴重</option>
+                            <option value="4">4 - 極嚴重</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>鱗屑 (D)</label>
+                        <select name="desquamation_trunk" data-region="trunk" data-type="desquamation">
+                            <option value="0">0 - 無</option>
+                            <option value="1">1 - 輕微</option>
+                            <option value="2">2 - 中等</option>
+                            <option value="3">3 - 嚴重</option>
+                            <option value="4">4 - 極嚴重</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>面積 (A)</label>
+                        <select name="area_trunk" data-region="trunk" data-type="area">
+                            <option value="0">0 - 無病灶</option>
+                            <option value="1">1 - <10%</option>
+                            <option value="2">2 - 10-29%</option>
+                            <option value="3">3 - 30-49%</option>
+                            <option value="4">4 - 50-69%</option>
+                            <option value="5">5 - 70-89%</option>
+                            <option value="6">6 - 90-100%</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 下肢 -->
+            <div class="region-section">
+                <h4>下肢 (L) - 權重 40%</h4>
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label>紅斑 (E)</label>
+                        <select name="erythema_lower" data-region="lower" data-type="erythema">
+                            <option value="0">0 - 無</option>
+                            <option value="1">1 - 輕微</option>
+                            <option value="2">2 - 中等</option>
+                            <option value="3">3 - 嚴重</option>
+                            <option value="4">4 - 極嚴重</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>浸潤 (I)</label>
+                        <select name="infiltrate_lower" data-region="lower" data-type="infiltrate">
+                            <option value="0">0 - 無</option>
+                            <option value="1">1 - 輕微</option>
+                            <option value="2">2 - 中等</option>
+                            <option value="3">3 - 嚴重</option>
+                            <option value="4">4 - 極嚴重</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>鱗屑 (D)</label>
+                        <select name="desquamation_lower" data-region="lower" data-type="desquamation">
+                            <option value="0">0 - 無</option>
+                            <option value="1">1 - 輕微</option>
+                            <option value="2">2 - 中等</option>
+                            <option value="3">3 - 嚴重</option>
+                            <option value="4">4 - 極嚴重</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>面積 (A)</label>
+                        <select name="area_lower" data-region="lower" data-type="area">
+                            <option value="0">0 - 無病灶</option>
+                            <option value="1">1 - <10%</option>
+                            <option value="2">2 - 10-29%</option>
+                            <option value="3">3 - 30-49%</option>
+                            <option value="4">4 - 50-69%</option>
+                            <option value="5">5 - 70-89%</option>
+                            <option value="6">6 - 90-100%</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 結果顯示 -->
+            <div class="result-display">
+                <div class="result-card">
+                    <div class="result-score">
+                        <span class="score-label">PASI 分數</span>
+                        <span class="score-value" id="pasiScore">0.0</span>
+                    </div>
+                    <div class="result-severity">
+                        <span class="severity-label">嚴重程度</span>
+                        <span class="severity-value" id="severityLevel">無症狀</span>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.pasi-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.pasi-info {
+    background: #f5f5f5;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.info-header h3 {
+    margin: 0;
+}
+
+.toggle-icon {
+    font-size: 18px;
+    transition: transform 0.3s;
+}
+
+.info-header:hover .toggle-icon {
+    color: #4CAF50;
+}
+
+.info-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.info-content.collapsed {
+    max-height: 0;
+    opacity: 0;
+}
+
+.pasi-info h3, .pasi-info h4 {
+    color: #333;
+    margin-top: 15px;
+}
+
+.pasi-info h3:first-child {
+    margin-top: 0;
+}
+
+.pasi-info ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.pasi-info li {
+    margin: 5px 0;
+}
+
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+}
+
+.info-table th, .info-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.info-table th {
+    background: #e0e0e0;
+}
+
+.formula {
+    background: #e8f5e9;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+.pasi-calculator {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pasi-calculator h3 {
+    margin-top: 0;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.region-section {
+    background: #fafafa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.region-section h4 {
+    margin: 0 0 10px 0;
+    color: #555;
+}
+
+.input-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.input-group label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.input-group select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.result-display {
+    margin: 30px 0;
+}
+
+.result-card {
+    display: flex;
+    gap: 20px;
+}
+
+.result-score, .result-severity {
+    flex: 1;
+    background: #e8f5e9;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.score-label, .severity-label {
+    display: block;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.score-value {
+    display: block;
+    font-size: 48px;
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+.severity-value {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+}
+</style>
+
+<script>
+// 收折 PASI 說明區塊
+function toggleInfoSection() {
+    const content = document.getElementById('infoContent');
+    const icon = document.getElementById('toggleIcon');
+    
+    if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        icon.textContent = '▼';
+    } else {
+        content.classList.add('collapsed');
+        icon.textContent = '▶';
+    }
+}
+
+const form = document.getElementById('pasiForm');
+const pasiScoreEl = document.getElementById('pasiScore');
+const severityLevelEl = document.getElementById('severityLevel');
+
+// 即時計算 PASI
+function calculatePASI() {
+    const regions = ['head', 'upper', 'trunk', 'lower'];
+    const weights = { head: 0.1, upper: 0.2, trunk: 0.3, lower: 0.4 };
+    
+    let totalPASI = 0;
+    
+    regions.forEach(region => {
+        const erythema = parseInt(form.querySelector(`[name="erythema_${region}"]`).value) || 0;
+        const infiltrate = parseInt(form.querySelector(`[name="infiltrate_${region}"]`).value) || 0;
+        const desquamation = parseInt(form.querySelector(`[name="desquamation_${region}"]`).value) || 0;
+        const area = parseInt(form.querySelector(`[name="area_${region}"]`).value) || 0;
+        
+        const regionSum = erythema + infiltrate + desquamation;
+        const regionPASI = weights[region] * regionSum * area;
+        totalPASI += regionPASI;
+    });
+    
+    // 更新顯示
+    pasiScoreEl.textContent = totalPASI.toFixed(1);
+    
+    // 判定嚴重程度
+    let severity = '無症狀';
+    let color = '#4CAF50';
+    
+    if (totalPASI === 0) {
+        severity = '無症狀';
+    } else if (totalPASI < 5) {
+        severity = '輕度';
+        color = '#8BC34A';
+    } else if (totalPASI < 10) {
+        severity = '中度';
+        color = '#FF9800';
+    } else if (totalPASI < 15) {
+        severity = '重度';
+        color = '#F44336';
+    } else {
+        severity = '極重度';
+        color = '#B71C1C';
+    }
+    
+    severityLevelEl.textContent = severity;
+    severityLevelEl.style.color = color;
+    document.querySelector('.result-card').style.borderLeft = `4px solid ${color}`;
+}
+
+// 監聽所有輸入
+form.querySelectorAll('select').forEach(select => {
+    select.addEventListener('change', calculatePASI);
+});
+
+// 初始計算
+calculatePASI();
+</script>
+{% endblock %}
