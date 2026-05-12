@@ -159,6 +159,11 @@ TABLES = {
         "image_path": "TEXT",
         "remark": "TEXT",
         "created_at": "TEXT DEFAULT (datetime('now', 'localtime'))"
+    },
+    "additional_medicines": {
+        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "name": "TEXT",
+        "disable": "INTEGER"
     }
 }
 

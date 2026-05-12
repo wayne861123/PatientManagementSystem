@@ -210,8 +210,10 @@ def management_medicines():
     traditional_medicines = cursor.fetchall()
     cursor.execute("SELECT * FROM biological_medicines ORDER BY id")
     biological_medicines = cursor.fetchall()
+    cursor.execute("SELECT * FROM additional_medicines ORDER BY id")
+    additional_medicines = cursor.fetchall()
     conn.close()
-    return render_template("management.html", type="medicines", items=traditional_medicines + biological_medicines)
+    return render_template("management.html", type="medicines", items=traditional_medicines + biological_medicines, additional_medicines=additional_medicines)
 
 
 @app.route("/pasi")
@@ -425,6 +427,10 @@ def patient_detail(patient_id):
     cursor.execute("SELECT * FROM biological_medicines ORDER BY id")
     biological_medicines = cursor.fetchall()
 
+    # 取得額外藥物列表（用於勾選）
+    cursor.execute("SELECT * FROM additional_medicines WHERE disable IS NULL OR disable = 0 ORDER BY id")
+    additional_medicines = cursor.fetchall()
+
     conn.close()
 
     if patient is None:
@@ -438,7 +444,8 @@ def patient_detail(patient_id):
                            examination_record_dict=examination_record_dict,
                            examinations=examinations,
                            biological_medicines=biological_medicines,
-                           traditional_medicines=traditional_medicines)
+                           traditional_medicines=traditional_medicines,
+                           additional_medicines=additional_medicines)
 
 
 @app.route("/history/examination/<int:patient_id>")
@@ -498,8 +505,12 @@ def all_medicine_record(patient_id):
             history.append(bio)
             bio = dict(biological_medicine_record.pop()) if biological_medicine_record else None
 
+    # 取得額外藥物列表（用於勾選）
+    cursor.execute("SELECT * FROM additional_medicines WHERE disable IS NULL OR disable = 0 ORDER BY id")
+    additional_medicines = cursor.fetchall()
+
     conn.close()
-    return render_template("history.html", patient=patient, history=history)
+    return render_template("history.html", patient=patient, history=history, additional_medicines=additional_medicines)
 
 
 @app.route("/add_patient", methods=["GET", "POST"])
@@ -787,6 +798,42 @@ def api_add_medicines():
     conn.close()
 
     logger.info(f"新增藥物: table={table_name}, id={record_id}, name={name}")
+    return {"success": True}
+
+
+@app.route("/api/add/additional_medicines", methods=["POST"])
+def api_add_additional_medicines():
+    """新增額外藥物 API"""
+    data = request.get_json()
+    name = data.get("inputName")
+
+    # 必填欄位驗證
+    if not name or not name.strip():
+        return {"success": False, "message": "請輸入藥物名稱"}, 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("INSERT INTO additional_medicines (name) VALUES (?)", (name.strip(),))
+    record_id = cursor.lastrowid
+    conn.commit()
+    
+    # 記錄審計日誌
+    log_db_action(
+        cursor,
+        action="INSERT",
+        table_name="additional_medicines",
+        record_id=record_id,
+        old_data=None,
+        new_data={"id": record_id, "name": name.strip()},
+        sql_statement=f"INSERT INTO additional_medicines (name) VALUES ('{name.strip()}')",
+        operator="api",
+        ip_address=flask_request.remote_addr
+    )
+    conn.commit()
+    conn.close()
+
+    logger.info(f"新增額外藥物: id={record_id}, name={name}")
     return {"success": True}
 
 
@@ -1139,6 +1186,7 @@ def api_update_history():
     followup_date = data.get("followup_date")
     remain_dose = data.get("remain_dose")
     remark = data.get("remark")
+    additional_medicine = data.get("additional_medicine")
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -1160,14 +1208,15 @@ def api_update_history():
         new_data["remain_dose"] = remain_dose
     new_data["followup_date"] = followup_date
     new_data["remark"] = remark
+    new_data["additional_medicine"] = additional_medicine if additional_medicine is not None else old_data.get("additional_medicine", "")
 
     # 執行更新
     if type_ == "biological":
-        query = "UPDATE biological_medicine_record SET followup_date = ?, remain_dose = ?, remark = ? WHERE id = ? AND patient_id = ? AND record_id = ?"
-        cursor.execute(query, (followup_date, remain_dose, remark, id_, patient_id, record_id))
+        query = "UPDATE biological_medicine_record SET followup_date = ?, remain_dose = ?, remark = ?, additional_medicine = ? WHERE id = ? AND patient_id = ? AND record_id = ?"
+        cursor.execute(query, (followup_date, remain_dose, remark, additional_medicine if additional_medicine else "", id_, patient_id, record_id))
     else:
-        query = "UPDATE traditional_medicine_record SET followup_date = ?, remark = ? WHERE id = ? AND patient_id = ? AND record_id = ?"
-        cursor.execute(query, (followup_date, remark, id_, patient_id, record_id))
+        query = "UPDATE traditional_medicine_record SET followup_date = ?, remark = ?, additional_medicine = ? WHERE id = ? AND patient_id = ? AND record_id = ?"
+        cursor.execute(query, (followup_date, remark, additional_medicine if additional_medicine else "", id_, patient_id, record_id))
 
     conn.commit()
     
@@ -1199,6 +1248,7 @@ def api_update_followup_record():
     next_followup_date = data.get("next-followup-date")
     remain_dose = data.get("remain-dose")
     remark = data.get("remark")
+    additional_medicine = data.get("additional-medicine")
 
     # 必填欄位驗證
     if not record_id:
@@ -1230,21 +1280,22 @@ def api_update_followup_record():
     new_data["followup_date"] = followup_date if followup_date else old_data.get("followup_date")
     new_data["next_followup_date"] = next_followup_date if next_followup_date else old_data.get("next_followup_date")
     new_data["remark"] = remark if remark is not None else old_data.get("remark")
+    new_data["additional_medicine"] = additional_medicine if additional_medicine is not None else old_data.get("additional_medicine", "")
 
     # 執行更新
     if medicine_type == "biological":
         new_data["remain_dose"] = remain_dose if remain_dose is not None else old_data.get("remain_dose")
         cursor.execute("""
             UPDATE biological_medicine_record
-            SET followup_date = ?, next_followup_date = ?, remain_dose = ?, remark = ?
+            SET followup_date = ?, next_followup_date = ?, remain_dose = ?, remark = ?, additional_medicine = ?
             WHERE id = ? AND patient_id = ?
-        """, (new_data["followup_date"], new_data["next_followup_date"], new_data["remain_dose"], new_data["remark"], record_id, patient_id))
+        """, (new_data["followup_date"], new_data["next_followup_date"], new_data["remain_dose"], new_data["remark"], new_data["additional_medicine"], record_id, patient_id))
     else:
         cursor.execute("""
             UPDATE traditional_medicine_record
-            SET followup_date = ?, next_followup_date = ?, remark = ?
+            SET followup_date = ?, next_followup_date = ?, remark = ?, additional_medicine = ?
             WHERE id = ? AND patient_id = ?
-        """, (new_data["followup_date"], new_data["next_followup_date"], new_data["remark"], record_id, patient_id))
+        """, (new_data["followup_date"], new_data["next_followup_date"], new_data["remark"], new_data["additional_medicine"], record_id, patient_id))
 
     conn.commit()
 
@@ -1391,13 +1442,16 @@ def api_delete_medicine():
     type_ = data.get("type")
 
     # 類型驗證 - 白名單
-    if type_ not in ("tradmedicines", "biomedicines"):
+    if type_ not in ("tradmedicines", "biomedicines", "additionalmedicines"):
         return {"success": False, "message": "無效的藥物類型"}, 400
 
     conn = get_connection()
     cursor = conn.cursor()
 
-    table_name = "traditional_medicines" if type_ == "tradmedicines" else "biological_medicines"
+    if type_ == "additionalmedicines":
+        table_name = "additional_medicines"
+    else:
+        table_name = "traditional_medicines" if type_ == "tradmedicines" else "biological_medicines"
     
     # 取得舊資料
     cursor.execute(f"SELECT * FROM {table_name} WHERE id = ?", (id_,))
@@ -1411,6 +1465,8 @@ def api_delete_medicine():
         cursor.execute("UPDATE traditional_medicines SET disable = ? WHERE id = ?", (1, id_))
     elif type_ == "biomedicines":
         cursor.execute("UPDATE biological_medicines SET disable = ? WHERE id = ?", (1, id_))
+    elif type_ == "additionalmedicines":
+        cursor.execute("UPDATE additional_medicines SET disable = ? WHERE id = ?", (1, id_))
     
     # 記錄審計日誌
     new_data = dict(old_data)

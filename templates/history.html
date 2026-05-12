@@ -3,46 +3,59 @@
 {% block container %}
 <div class="detail-card w-1000">    <h1 class="detail-patient-name">{{ patient.name }}</h1>
     {% for his in history %}
-    <form id="form-{{ his.id }}">
-        <input type="hidden" name="record_id" value="{{ his.record_id }}" disabled>
-        <input type="hidden" name="patient_id" value="{{ his.patient_id }}" disabled>
-        <input type="hidden" name="id" value="{{ his.id }}" disabled>
-        <input type="hidden" name="type" value="{{ his.type }}" disabled>
-        <div class="history-grid history-item">
-            <div class="center">
-                <label>{{ loop.index }}</label>
-            </div>
-            <div>
-                <div class="history-item pb-5">
-                    <label>藥物類型</label>
+        <form id="form-{{ his.id }}">
+            <input type="hidden" name="record_id" value="{{ his.record_id }}" disabled>
+            <input type="hidden" name="patient_id" value="{{ his.patient_id }}" disabled>
+            <input type="hidden" name="id" value="{{ his.id }}" disabled>
+            <input type="hidden" name="type" value="{{ his.type }}" disabled>
+            <div class="history-grid history-item">
+                <div class="center">
+                    <label>{{ loop.index }}</label>
+                </div>
+                <div>
+                    <div class="history-item pb-5">
+                        <label>藥物類型</label>
+                        {% if his.type == "biological" %}
+                            <p>生物製劑</p>
+                        {% else %}
+                            <p>傳統用藥</p>
+                        {% endif %}
+                    </div>
+                    <div class="history-item">
+                        <label>藥物名稱</label>
+                        <p>{{ his.name }}</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="history-item">
+                        <label>回診時間</label>
+                        <input class="info-input" type="date" name="followup_date" value="{{ his.followup_date }}" disabled>
+                    </div>
                     {% if his.type == "biological" %}
-                        <p>生物製劑</p>
-                    {% else %}
-                        <p>傳統用藥</p>
+                        <div class="history-item">
+                            <label>剩餘針數</label>
+                            <input class="info-input" type="number" name="remain_dose" value="{{ his.remain_dose }}" disabled>
+                        </div>
                     {% endif %}
                 </div>
                 <div class="history-item">
-                    <label>藥物名稱</label>
-                    <p>{{ his.name }}</p>
-                </div>
-            </div>
-            <div>
-                <div class="history-item">
-                    <label>回診時間</label>
-                    <input class="info-input" type="date" name="followup_date" value="{{ his.followup_date }}" disabled>
-                </div>
-                {% if his.type == "biological" %}
-                    <div class="history-item">
-                        <label>剩餘針數</label>
-                        <input class="info-input" type="number" name="remain_dose" value="{{ his.remain_dose }}" disabled>
+                    <label>額外藥物</label>
+                    <textarea class="textarea additional-medicine-textarea" id="additional-medicine-textarea-{{ his.id }}" disabled>{{ "\n".join(his.additional_medicine.split(",")) if his.additional_medicine else '' }}</textarea>
+                    <input type="hidden" id="additional-medicine-hidden-{{ his.id }}" name="additional_medicine" value="{{ his.additional_medicine if his.additional_medicine else '' }}">
+                    <div class="checkbox-scroll-container additional-medicine-checkbox-container hidden" id="additional-medicine-checkbox-container-{{ his.id }}">
+                        {% for med in additional_medicines %}
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="edit-additional-medicine-checkbox" data-record-id="{{ his.id }}" value="{{ med.name }}" {% if his.additional_medicine and med.name in his.additional_medicine %}checked{% endif %}>
+                            <span>{{ med.name }}</span>
+                        </label>
+                        {% endfor %}
                     </div>
-                {% endif %}
-            </div>
-            <div class="history-item">
-                <label>備註</label>
-                <textarea name="remark" class="textarea" disabled>{{ his.remark }}</textarea>
-            </div>
-            <div class="btn-group">
+                </div>
+                <div class="history-item">
+                    <label>備註</label>
+                    <textarea name="remark" class="textarea" disabled>{{ his.remark }}</textarea>
+                </div>
+                <div class="btn-group">
                 <a id="edit-btn-{{ his.id }}" href="javascript:void(0)" class="general-btn" onclick="enableRowEditing('{{ his.id }}')">編輯</a>
                 <a id="save-btn-{{ his.id }}" href="javascript:void(0)" class="general-btn hidden" onclick="saveRow('{{ his.id }}')">保存</a>
                 <a id="cancel-btn-{{ his.id }}" href="javascript:void(0)" class="general-btn hidden" onclick="cancelRow('{{ his.id }}')">取消</a>
@@ -98,9 +111,26 @@
         deleteBtn.classList.add("hidden");
         deleteBtn.classList.remove("inline-block");
 
-        // 啟用該列的編輯欄位（不包括 hidden input）
+        // 啟用該列的編輯欄位（不包括 hidden input 和額外藥物的 textarea）
         form.querySelectorAll("input:not([type='hidden']), textarea, select").forEach(input => {
+            // 跳過額外藥物的 textarea
+            if (input.classList.contains("additional-medicine-textarea")) {
+                return;
+            }
             input.disabled = false;
+        });
+
+        // 切換額外藥物顯示：隱藏 textarea，顯示 checkbox
+        const textarea = document.getElementById(`additional-medicine-textarea-${rowId}`);
+        const checkboxContainer = document.getElementById(`additional-medicine-checkbox-container-${rowId}`);
+        if (textarea) textarea.classList.add("hidden");
+        if (checkboxContainer) checkboxContainer.classList.remove("hidden");
+
+        // 啟用 checkbox 並綁定 onchange 事件
+        const checkboxes = document.querySelectorAll(`.edit-additional-medicine-checkbox[data-record-id="${rowId}"]`);
+        checkboxes.forEach(checkbox => {
+            checkbox.disabled = false;
+            checkbox.addEventListener('change', () => updateHistoryAdditionalMedicineValue(rowId));
         });
     }
 
@@ -172,6 +202,34 @@
                 input.disabled = true;
             }
         });
+
+        // 恢復額外藥物顯示：顯示 textarea，隱藏 checkbox
+        const textarea = document.getElementById(`additional-medicine-textarea-${rowId}`);
+        const checkboxContainer = document.getElementById(`additional-medicine-checkbox-container-${rowId}`);
+        if (textarea) textarea.classList.remove("hidden");
+        if (checkboxContainer) checkboxContainer.classList.add("hidden");
+
+        // 恢復 hidden input 的原始值
+        const hiddenInput = document.getElementById(`additional-medicine-hidden-${rowId}`);
+        if (hiddenInput && originalValues[rowId] && originalValues[rowId]['additional_medicine'] !== undefined) {
+            hiddenInput.value = originalValues[rowId]['additional_medicine'];
+        }
+    }
+
+    /**
+     * 更新歷史記錄中額外藥物的 hidden input 值
+     * @param {string} rowId - 記錄 ID
+     */
+    function updateHistoryAdditionalMedicineValue(rowId) {
+        const checkboxes = document.querySelectorAll(`.edit-additional-medicine-checkbox[data-record-id="${rowId}"]`);
+        const hiddenInput = document.getElementById(`additional-medicine-hidden-${rowId}`);
+        const selectedMedicines = [];
+        checkboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                selectedMedicines.push(checkbox.value);
+            }
+        });
+        hiddenInput.value = selectedMedicines.join(',');
     }
 </script>
 {% endblock %}

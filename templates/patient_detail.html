@@ -112,7 +112,7 @@
                 <a href="javascript:void(0)" class="general-btn btn-margin" onclick="saveAddFollowupRecord()">保存</a>
                 <a href="javascript:void(0)" class="general-btn btn-margin" onclick="toggleAddFollowupRecord()">取消</a>
             </div>
-            <div class="flex">
+            <div>
                 <div class="pr-20">
                     <div class="card-grid">
                         {% if last_medicine_record.type == "biological" %}
@@ -133,9 +133,6 @@
                                     <span>續用</span>
                                 {% endif %}
                             </div>
-                            <div class="info-item"><label>額外藥物</label><span>{{ last_medicine_record.additional_medicine if last_medicine_record.additional_medicine else '-' }}</span></div>
-                        {% else %}
-                            <div class="info-item"><label>額外藥物</label><span>{{ last_medicine_record.additional_medicine if last_medicine_record.additional_medicine else '-' }}</span></div>
                         {% endif %}
                     </div>
                 </div>
@@ -147,6 +144,7 @@
                             <label>回診時間</label>
                             <label>預計回診時間</label>
                             <label>{% if medicine_type == "生物製劑" %}剩餘針數{% endif %}</label>
+                            <label>額外藥物</label>
                             <label>備註</label>
                             <label>操作</label>
                         </div>
@@ -167,6 +165,17 @@
                                     {% if medicine_type == "生物製劑" %}
                                         <input class="info-input" id="remain-dose" name="remain-dose" type="number" min="0" max="{{ last_medicine_record.remain_dose if last_medicine_record.remain_dose else 0 }}" value="{{ last_medicine_record.remain_dose if last_medicine_record.remain_dose else 0 }}" class="w-80" required>
                                     {% endif %}
+                                </div>
+                                <div>
+                                    <input type="hidden" id="followup-additional-medicine" name="additional-medicine" value="{{ last_medicine_record.additional_medicine if last_medicine_record.additional_medicine else '' }}">
+                                    <div class="checkbox-scroll-container" id="followup-additional-medicine-container">
+                                        {% for med in additional_medicines %}
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" class="followup-additional-medicine-checkbox" value="{{ med.name }}" onchange="updateFollowupAdditionalMedicineValue()">
+                                            <span>{{ med.name }}</span>
+                                        </label>
+                                        {% endfor %}
+                                    </div>
                                 </div>
                                 <div>
                                     <textarea class="info-textarea" name="remark"></textarea>
@@ -191,6 +200,18 @@
                                             {% if medicine_type == "生物製劑" %}
                                                 <input class="info-input followup-input" name="remain-dose" type="number" value="{{ record.remain_dose }}" style="width: 80%;" disabled required>
                                             {% endif %}
+                                        </div>
+                                        <div class="followup-checkbox-cell">
+                                            <textarea class="info-textarea followup-input followup-additional-textarea" id="edit-followup-additional-textarea-{{ record.id }}" disabled>{{ "\n".join(record.additional_medicine.split(",")) if record.additional_medicine else '' }}</textarea>
+                                            <input type="hidden" id="edit-followup-additional-medicine-{{ record.id }}" name="additional-medicine" value="{{ record.additional_medicine if record.additional_medicine else '' }}">
+                                            <div class="checkbox-scroll-container followup-checkbox-container hidden" id="edit-followup-container-{{ record.id }}">
+                                                {% for med in additional_medicines %}
+                                                <label class="checkbox-label">
+                                                    <input type="checkbox" class="edit-followup-checkbox" data-record-id="{{ record.id }}" value="{{ med.name }}" {% if record.additional_medicine and med.name in record.additional_medicine %}checked{% endif %}>
+                                                    <span>{{ med.name }}</span>
+                                                </label>
+                                                {% endfor %}
+                                            </div>
                                         </div>
                                         <div>
                                             <textarea class="info-textarea followup-input" name="remark" disabled>{{ record.remark if record.remark else '' }}</textarea>
@@ -253,7 +274,15 @@
                     </div>
                     <div class="info-item">
                         <label>額外藥物</label>
-                        <textarea class="textarea" id="additional-medicine" name="additional-medicine"></textarea>
+                        <input type="hidden" id="additional-medicine" name="additional-medicine" value="">
+                        <div class="checkbox-scroll-container" id="additional-medicine-container">
+                            {% for med in additional_medicines %}
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="additional-medicine-checkbox" value="{{ med.name }}" onchange="updateAdditionalMedicineValue()">
+                                <span>{{ med.name }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
                 <div>
@@ -628,9 +657,24 @@
      */
     function editFollowupRecord(recordId) {
         const form = document.getElementById(`followup-record-form-${recordId}`);
-        // 啟用表單中的所有 input、textarea
+        // 啟用表單中的所有 input、textarea（除了額外藥物的 textarea）
         form.querySelectorAll(".followup-input").forEach(input => {
+            // 跳過額外藥物的 textarea
+            if (input.classList.contains("followup-additional-textarea")) {
+                return;
+            }
             input.disabled = false;
+        });
+        // 切換額外藥物顯示：隱藏 textarea，顯示 checkbox
+        const textarea = document.getElementById(`edit-followup-additional-textarea-${recordId}`);
+        const checkboxContainer = document.getElementById(`edit-followup-container-${recordId}`);
+        if (textarea) textarea.classList.add("hidden");
+        if (checkboxContainer) checkboxContainer.classList.remove("hidden");
+        // 啟用 checkbox 並綁定 onchange 事件
+        const checkboxes = document.querySelectorAll(`.edit-followup-checkbox[data-record-id="${recordId}"]`);
+        checkboxes.forEach(checkbox => {
+            checkbox.disabled = false;
+            checkbox.addEventListener('change', () => updateEditFollowupAdditionalMedicineValue(recordId));
         });
         // 切換按鈕顯示
         form.querySelector(".edit-followup-btn").classList.add("hidden");
@@ -696,5 +740,52 @@
             document.getElementById("district").value = "{{ patient.district }}"
         {% endif %}
     {% endif %}
+    /**
+     * 更新額外藥物的隱藏欄位值
+     * 將所有勾選的藥物組合成逗號分隔的字串
+     */
+    function updateAdditionalMedicineValue() {
+        const checkboxes = document.querySelectorAll('.additional-medicine-checkbox');
+        const hiddenInput = document.getElementById('additional-medicine');
+        const selectedMedicines = [];
+        checkboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                selectedMedicines.push(checkbox.value);
+            }
+        });
+        hiddenInput.value = selectedMedicines.join(',');
+    }
+    
+    /**
+     * 更新回診記錄中額外藥物的隱藏欄位值
+     * 將所有勾選的藥物組合成逗號分隔的字串
+     */
+    function updateFollowupAdditionalMedicineValue() {
+        const checkboxes = document.querySelectorAll('.followup-additional-medicine-checkbox');
+        const hiddenInput = document.getElementById('followup-additional-medicine');
+        const selectedMedicines = [];
+        checkboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                selectedMedicines.push(checkbox.value);
+            }
+        });
+        hiddenInput.value = selectedMedicines.join(',');
+    }
+    
+    /**
+     * 更新編輯模式中回診記錄的額外藥物隱藏欄位值
+     * @param {string} recordId - 回診記錄 ID
+     */
+    function updateEditFollowupAdditionalMedicineValue(recordId) {
+        const checkboxes = document.querySelectorAll(`.edit-followup-checkbox[data-record-id="${recordId}"]`);
+        const hiddenInput = document.getElementById(`edit-followup-additional-medicine-${recordId}`);
+        const selectedMedicines = [];
+        checkboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                selectedMedicines.push(checkbox.value);
+            }
+        });
+        hiddenInput.value = selectedMedicines.join(',');
+    }
 </script>
 {% endblock %}

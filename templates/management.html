@@ -56,6 +56,7 @@
                         <option value="">請選擇類型</option>
                         <option value="傳統用藥">傳統用藥</option>
                         <option value="生物製劑">生物製劑</option>
+                        <option value="額外藥物">額外藥物</option>
                     </select>
                 </div>
                 <input class="text-input hidden" id="input-interval" type="text" placeholder="回診間隔週數">
@@ -117,8 +118,22 @@
             </div>
         </div>
         {% endfor %}
+        <!-- 額外藥物列表 -->
+        {% if type == "medicines" and additional_medicines %}
+        {% for item in additional_medicines %}
+        {% if item.disable == 1 %}
+        {% continue %}
+        {% endif %}
+        <div class="card">
+            <h2>{{ item.name }}</h2>
+            <h2>額外藥物</h2>
+            <div class="mt-5">
+                <a href="javascript:void(0);" class="general-btn" onclick="deleteCard('additionalmedicines', '{{ item.id }}')">刪除</a>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
     </div>
-
     <script>
         function deleteCard(type, id) {
             if (type === "doctors") {
@@ -127,7 +142,7 @@
                 url = "{{ url_for('api_delete_disease' ) }}";
             } else if (type === "examinations") {
                 url = "{{ url_for('api_delete_examination' ) }}";
-            } else if (type === "tradmedicines" || type === "biomedicines") {
+            } else if (type === "tradmedicines" || type === "biomedicines" || type === "additionalmedicines") {
                 url = "{{ url_for('api_delete_medicine' ) }}";
             }
             fetch(`${url}`, {
@@ -183,7 +198,30 @@
                     alert("請選擇藥物類型");
                     return ;
                 }
-                if (selectMedicineType === "傳統用藥") {
+                if (selectMedicineType === "額外藥物") {
+                    // 額外藥物只需要名稱
+                    fetch("{{ url_for('api_add_additional_medicines') }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ inputName })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert("新增成功！");
+                            location.reload();
+                        } else {
+                            alert("新增失敗：" + (data.message || data.error));
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                        alert("新增失敗，請稍後再試。");
+                    });
+                    return;
+                } else if (selectMedicineType === "傳統用藥") {
                     if (isNaN(inputInterval) || !inputInterval) {
                         alert("請輸入回診間隔週數，並確認為數字");
                         return ;
@@ -209,7 +247,7 @@
                     alert("新增成功！");
                     location.reload();
                 } else {
-                    alert("新增失敗：" + data.error);
+                    alert("新增失敗：" + (data.message || data.error));
                 }
             })
             .catch(error => {

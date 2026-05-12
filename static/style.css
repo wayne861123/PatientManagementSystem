@@ -304,7 +304,7 @@ select {
 /* 歷史紀錄網格 */
 .history-grid {
     display: grid;
-    grid-template-columns: 30px 120px 150px 250px auto;
+    grid-template-columns: 30px 150px 150px 200px auto 80px;
     gap: 10px;
     padding-bottom: 20px;
     place-items: center;
@@ -326,17 +326,18 @@ select {
 /* 卡片內容網格 */
 .card-grid {
     display: grid;
-    grid-template-rows: repeat(2, 1fr);
+    grid-template-columns: repeat(3, auto);
     gap: 20px;
     padding-bottom: 20px;
-    width: 155px;
+    /* width: 155px; */
 }
 
 /* 卡片內容行網格 */
 .card-content-grid {
     display: grid;
-    grid-template-columns: 120px 120px 70px auto 80px;
+    grid-template-columns: 120px 120px 70px 200px auto 80px;
     padding-bottom: 5px;
+    gap: 5px;
 }
 
 .card-content-grid label {
@@ -686,6 +687,7 @@ select {
 /* 資訊文字區域 */
 .info-textarea {
     resize: none;
+    height: 70px;
     width: 100%;
     padding: 2px 2px;
     border: 2px solid rgba(212, 175, 55, 0.4);
@@ -855,6 +857,74 @@ select {
 .medicine-info {
     flex: 1;
     display: flex;
+}
+
+/* 滾動式 checkbox 容器 */
+.checkbox-scroll-container {
+    max-height: 150px;
+    overflow-y: auto;
+    padding: 10px;
+    background: #ffffff;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Checkbox 標籤樣式 */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: #fafafa;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.checkbox-label:hover {
+    background: rgba(212, 175, 55, 0.1);
+    border-color: #D4AF37;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #D4AF37;
+    cursor: pointer;
+}
+
+.checkbox-label span {
+    color: #2C2C2C;
+}
+
+/* 回診記錄額外藥物格子 */
+.followup-checkbox-cell {
+    position: relative;
+}
+
+.followup-checkbox-cell .followup-additional-textarea {
+    width: 100%;
+    height: 70px;
+    resize: none;
+    background: #fafafa;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 1rem;
+    color: #2C2C2C;
+    line-height: 1.4;
+    padding: 5px;
+}
+
+.followup-checkbox-cell .followup-checkbox-container {
+    width: 100%;
+    min-height: 60px;
 }
 
 .medicine {
