@@ -5,7 +5,7 @@
 """
 
 from flask import Flask, render_template, request, redirect, url_for, request as flask_request
-from database import init_db, get_connection, validate_required_fields, safe_date, log_db_action, logger
+from database import init_db, get_connection, validate_required_fields, safe_date, safe_int, log_db_action, logger
 from functools import wraps
 from datetime import datetime, timedelta
 
@@ -954,14 +954,16 @@ def api_add_followup_record():
 
     table_name = ""
     new_data = {}
+    # 安全轉換 remain_dose 為整數
+    safe_remain_dose = safe_int(remain_dose)
     if medicine_type == "biological":
         cursor.execute("""
             INSERT INTO biological_medicine_record (record_id, patient_id, name, remain_dose, followup_date, next_followup_date, remark, additional_medicine)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (record_id, patient_id, name, remain_dose, followup_date, next_followup_date, remark or "", additional_medicine or ""))
+        """, (record_id, patient_id, name, safe_remain_dose, followup_date, next_followup_date, remark or "", additional_medicine or ""))
         table_name = "biological_medicine_record"
         new_data = {"record_id": record_id, "patient_id": patient_id, "name": name,
-                   "remain_dose": remain_dose, "followup_date": followup_date, 
+                   "remain_dose": safe_remain_dose, "followup_date": followup_date, 
                    "next_followup_date": next_followup_date, "remark": remark or "", "additional_medicine": additional_medicine or ""}
     else:
         cursor.execute("""
@@ -1202,10 +1204,13 @@ def api_update_history():
         return {"success": False, "message": "找不到記錄"}, 404
     old_data = dict(old_data_row)
 
+    # 安全轉換 remain_dose 為整數
+    safe_remain_dose = safe_int(remain_dose) if type_ == "biological" else None
+    
     # 準備新資料
     new_data = dict(old_data)
     if type_ == "biological":
-        new_data["remain_dose"] = remain_dose
+        new_data["remain_dose"] = safe_remain_dose
     new_data["followup_date"] = followup_date
     new_data["remark"] = remark
     new_data["additional_medicine"] = additional_medicine if additional_medicine is not None else old_data.get("additional_medicine", "")
@@ -1213,7 +1218,7 @@ def api_update_history():
     # 執行更新
     if type_ == "biological":
         query = "UPDATE biological_medicine_record SET followup_date = ?, remain_dose = ?, remark = ?, additional_medicine = ? WHERE id = ? AND patient_id = ? AND record_id = ?"
-        cursor.execute(query, (followup_date, remain_dose, remark, additional_medicine if additional_medicine else "", id_, patient_id, record_id))
+        cursor.execute(query, (followup_date, safe_remain_dose, remark, additional_medicine if additional_medicine else "", id_, patient_id, record_id))
     else:
         query = "UPDATE traditional_medicine_record SET followup_date = ?, remark = ?, additional_medicine = ? WHERE id = ? AND patient_id = ? AND record_id = ?"
         cursor.execute(query, (followup_date, remark, additional_medicine if additional_medicine else "", id_, patient_id, record_id))
@@ -1275,6 +1280,9 @@ def api_update_followup_record():
         return {"success": False, "message": "找不到記錄"}, 404
     old_data = dict(old_data_row)
 
+    # 安全轉換 remain_dose 為整數
+    safe_remain_dose = safe_int(remain_dose) if medicine_type == "biological" else None
+    
     # 準備新資料
     new_data = dict(old_data)
     new_data["followup_date"] = followup_date if followup_date else old_data.get("followup_date")
@@ -1284,7 +1292,7 @@ def api_update_followup_record():
 
     # 執行更新
     if medicine_type == "biological":
-        new_data["remain_dose"] = remain_dose if remain_dose is not None else old_data.get("remain_dose")
+        new_data["remain_dose"] = safe_remain_dose if safe_remain_dose is not None else old_data.get("remain_dose")
         cursor.execute("""
             UPDATE biological_medicine_record
             SET followup_date = ?, next_followup_date = ?, remain_dose = ?, remark = ?, additional_medicine = ?
