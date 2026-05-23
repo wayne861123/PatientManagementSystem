@@ -116,6 +116,8 @@ def home():
                 'medical_record_number': patient_info['medical_record_number'],
                 'status': patient_info['status'],
                 'doctor_name': patient_info['doctor_name'],
+                'medicine_name': record_dict['medicine_name'],
+                'medicine_type': '傳統用藥' if record_dict['type'] == 'traditional' else '生物製劑',
                 'reminder_items': [],
                 'urgent_level': 'yellow'
             }
@@ -220,6 +222,12 @@ def management_medicines():
 def pasi_score():
     """PASI分數試算頁面"""
     return render_template("pasi_score.html")
+
+
+@app.route("/injection-frequency")
+def injection_frequency():
+    """打針頻率頁面"""
+    return render_template("injection_frequency.html")
 
 
 # ===========================================================================

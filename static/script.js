@@ -20,6 +20,8 @@ function toggleSidebar() {
     const disease_management = document.getElementById("management-disease");
     const examination_management = document.getElementById("management-examination");
     const medicine_management = document.getElementById("management-medicine");
+    const pasi_score = document.getElementById("pasi-score");
+    
     
     if (sidebar.classList.toggle("sidebar-collapse")) {
         home_page.textContent = "🏠";
@@ -27,6 +29,7 @@ function toggleSidebar() {
         disease_management.textContent = "🦠";
         examination_management.textContent = "📝";
         medicine_management.textContent = "💊";
+        pasi_score.textContent = "🧮";
     }
     if (sidebar.classList.toggle("sidebar-expand")) {
         home_page.textContent = "首頁";
@@ -34,6 +37,7 @@ function toggleSidebar() {
         disease_management.textContent = "疾病管理";
         examination_management.textContent = "檢查項目管理";
         medicine_management.textContent = "藥物管理";
+        pasi_score.textContent = "PASI分數試算";
     }
     const isCollapsed = sidebar.classList.contains("sidebar-collapse");
     localStorage.setItem("sidebarCollapsed", isCollapsed);

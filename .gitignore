@@ -127,6 +127,9 @@ tempCodeRunnerFile.py
 # Config
 config.py
 
+# Encryption key
+.encryption_key
+
 # Ruff stuff:
 .ruff_cache/
 

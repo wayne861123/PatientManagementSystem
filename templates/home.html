@@ -33,6 +33,7 @@
                             <strong>{{ reminder.patient_name }}</strong>
                             <span class="patient-record-number" style="color: #666;">｜病歷號 {{ reminder.medical_record_number }}</span>
                             <span class="patient-status" style="color: #666;">｜{{ reminder.status }}</span>
+                            <span class="patient-medicine" style="color: #666;">｜{{ reminder.medicine_type }}：{{ reminder.medicine_name }}</span>
                         </div>
                         <div class="reminder-items">
                             {% for item in reminder.reminder_items %}
