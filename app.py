@@ -230,6 +230,63 @@ def injection_frequency():
     return render_template("injection_frequency.html")
 
 
+@app.route("/all-patients")
+def all_patients():
+    """所有病患列表頁面 - 含篩選功能"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 取得所有醫師（用於篩選下拉選單）
+    cursor.execute("SELECT * FROM doctors WHERE disable IS NULL OR disable = 0 ORDER BY id")
+    doctors = cursor.fetchall()
+    
+    # 取得所有疾病（用於篩選下拉選單）
+    cursor.execute("SELECT * FROM diseases WHERE disable IS NULL OR disable = 0 ORDER BY id")
+    diseases = cursor.fetchall()
+    
+    # 取得 URL 參數（支援前後端混合過濾）
+    doctor_id = request.args.get("doctor_id", type=int)
+    disease_id = request.args.get("disease_id", type=int)
+    search_keyword = request.args.get("search", "").strip()
+    
+    # 建構查詢
+    query = """
+        SELECT p.*, d.name as doctor_name, dis.name as disease_name
+        FROM patients p
+        LEFT JOIN doctors d ON p.doctor_id = d.id
+        LEFT JOIN diseases dis ON p.disease_id = dis.id
+        WHERE (p.status IS NULL OR p.status = '評估中' OR p.status = '用藥中')
+    """
+    params = []
+    
+    if doctor_id:
+        query += " AND p.doctor_id = ?"
+        params.append(doctor_id)
+    
+    if disease_id:
+        query += " AND p.disease_id = ?"
+        params.append(disease_id)
+    
+    if search_keyword:
+        query += " AND (p.name LIKE ? OR p.medical_record_number LIKE ? OR p.id_number LIKE ?)"
+        search_pattern = f"%{search_keyword}%"
+        params.extend([search_pattern, search_pattern, search_pattern])
+    
+    query += " ORDER BY p.id DESC"
+    
+    cursor.execute(query, params)
+    patients = cursor.fetchall()
+    
+    conn.close()
+    return render_template("all_patients.html", 
+                           doctors=doctors, 
+                           diseases=diseases,
+                           patients=patients,
+                           selected_doctor_id=doctor_id,
+                           selected_disease_id=disease_id,
+                           search_keyword=search_keyword)
+
+
 # ===========================================================================
 # 頁面路由 - 醫師與病患
 # ===========================================================================

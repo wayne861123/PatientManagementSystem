@@ -1313,3 +1313,226 @@ select {
                 0 0 20px rgba(212, 175, 55, 0.1);
     border: 1px solid rgba(212, 175, 55, 0.3);
 }
+
+/* --------------------------------------------------------------------------
+   12. All Patients Page - 所有病患列表頁面
+   -------------------------------------------------------------------------- */
+
+/* 篩選區域容器 */
+.filter-section {
+    width: 100%;
+    background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    border: 2px solid rgba(212, 175, 55, 0.25);
+}
+
+/* 篩選列 */
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-end;
+}
+
+/* 篩選項目 */
+.filter-item {
+    flex: 1;
+    min-width: 150px;
+}
+
+.filter-item label {
+    display: block;
+    color: #D4AF37;
+    font-weight: bold;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.filter-item select,
+.filter-item input[type="text"] {
+    width: 100%;
+    padding: 10px 15px;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: #ffffff;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.filter-item select:focus,
+.filter-item input[type="text"]:focus {
+    outline: none;
+    border-color: #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+/* 搜尋區域 */
+.search-item {
+    flex: 2;
+    min-width: 250px;
+    position: relative;
+}
+
+.search-item input {
+    padding-right: 45px;
+}
+
+.search-btn {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.search-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+}
+
+/* 篩選結果計數 */
+.filter-results {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.result-count {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+/* 病患卡片連結包裝 */
+.patient-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* 病患小卡片 */
+.patient-mini-card {
+    background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    transition: transform 0.3s, box-shadow 0.3s;
+    height: 100%;
+}
+
+.patient-mini-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18), 
+                0 0 15px rgba(212, 175, 55, 0.15);
+    border-color: #D4AF37;
+}
+
+/* 病患卡片標題區 */
+.patient-mini-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgba(212, 175, 55, 0.2);
+}
+
+.patient-mini-header .patient-name {
+    font-size: 1.15rem;
+    font-weight: bold;
+    color: #2C2C2C;
+    margin: 0;
+}
+
+/* 狀態標籤 */
+.patient-status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.patient-status-badge.在上車,
+.patient-status-badge.正常 {
+    background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+    color: white;
+}
+
+.patient-status-badge.在下車,
+.patient-status-badge.停藥 {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+}
+
+.patient-status-badge.空值,
+.patient-status-badge.無 {
+    background: rgba(212, 175, 55, 0.2);
+    color: #B8860B;
+}
+
+/* 病患卡片資訊區 */
+.patient-mini-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.info-row .info-label {
+    color: #888;
+    flex-shrink: 0;
+}
+
+.info-row .info-value {
+    color: #2C2C2C;
+    font-weight: 500;
+    text-align: right;
+    word-break: break-all;
+}
+
+/* 病患卡片連結包裝（與 doctor_disease_patients.html 一致） */
+.patient-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* 無病患訊息 */
+.no-patients-message {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #888;
+    text-align: center;
+}
+
+.no-data-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.6;
+}
+
+.no-data-text {
+    font-size: 1.1rem;
+}

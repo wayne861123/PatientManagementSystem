@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block header %}所有病患列表{% endblock %}
+{% block container %}
+    <!-- 篩選區域 -->
+    <div class="filter-section">
+        <div class="filter-row">
+            <div class="filter-item">
+                <label for="doctor-filter">醫師</label>
+                <select id="doctor-filter" onchange="applyFilter()">
+                    <option value="">全部醫師</option>
+                    {% for doctor in doctors %}
+                    <option value="{{ doctor.id }}" {% if selected_doctor_id == doctor.id %}selected{% endif %}>{{ doctor.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label for="disease-filter">疾病</label>
+                <select id="disease-filter" onchange="applyFilter()">
+                    <option value="">全部疾病</option>
+                    {% for disease in diseases %}
+                    <option value="{{ disease.id }}" {% if selected_disease_id == disease.id %}selected{% endif %}>{{ disease.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-item search-item">
+                <label for="search-input">關鍵字搜尋</label>
+                <input type="text" id="search-input" placeholder="搜尋姓名、病歷號..." value="{{ search_keyword }}" onkeyup="handleSearchKeyup(event)">
+                <button class="search-btn" onclick="applyFilter()">🔍</button>
+            </div>
+        </div>
+        <div class="filter-results">
+            <span class="result-count">共 {{ patients|length }} 位病患</span>
+        </div>
+    </div>
+
+    <!-- 病患卡片網格 -->
+    <div class="grid">
+        {% for patient in patients %}
+        <a href="{{ url_for('patient_detail', patient_id=patient.id) }}" class="patient-link">
+            <div class="patient-card" data-doctor="{{ patient.doctor_id }}" data-disease="{{ patient.disease_id }}" data-name="{{ patient.name }}" data-mrn="{{ patient.medical_record_number }}" data-idnum="{{ patient.id_number }}">
+                <h3>{{ patient.name }}</h3>
+                <p><strong>病歷號：</strong>{{ patient.medical_record_number or '-' }}</p>
+                <p><strong>生日：</strong>{{ patient.birthday or '-' }}</p>
+            </div>
+        </a>
+        {% else %}
+        <div class="no-patients-message">
+            <span class="no-data-icon">📋</span>
+            <span class="no-data-text">目前沒有符合條件的病患</span>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}

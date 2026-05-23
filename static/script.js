@@ -501,3 +501,113 @@ async function apiSubmit(url, options = {}) {
         }, 1000);
     }
 }
+
+/* --------------------------------------------------------------------------
+   9. 所有病患列表頁面 - 篩選功能
+   -------------------------------------------------------------------------- */
+
+/**
+ * 套用篩選條件，重新導向到過濾後的頁面
+ * 支援醫師、疾病和關鍵字搜尋
+ */
+function applyFilter() {
+    const doctorFilter = document.getElementById("doctor-filter");
+    const diseaseFilter = document.getElementById("disease-filter");
+    const searchInput = document.getElementById("search-input");
+    
+    const doctorId = doctorFilter ? doctorFilter.value : "";
+    const diseaseId = diseaseFilter ? diseaseFilter.value : "";
+    const searchKeyword = searchInput ? searchInput.value.trim() : "";
+    
+    // 建立 URL 參數
+    const params = new URLSearchParams();
+    if (doctorId) {
+        params.set("doctor_id", doctorId);
+    }
+    if (diseaseId) {
+        params.set("disease_id", diseaseId);
+    }
+    if (searchKeyword) {
+        params.set("search", searchKeyword);
+    }
+    
+    // 重新導向到過濾後的頁面
+    const baseUrl = window.location.pathname;
+    const queryString = params.toString();
+    const newUrl = baseUrl + (queryString ? "?" + queryString : "");
+    
+    window.location.href = newUrl;
+}
+
+/**
+ * 處理搜尋框的 Enter 鍵事件
+ * @param {KeyboardEvent} event - 鍵盤事件
+ */
+function handleSearchKeyup(event) {
+    if (event.key === "Enter") {
+        applyFilter();
+    }
+}
+
+/**
+ * 即時篩選（前端過濾，無需重新載入頁面）
+ * 可用於更順暢的使用者體驗
+ */
+function filterPatientsInstant() {
+    const doctorFilter = document.getElementById("doctor-filter");
+    const diseaseFilter = document.getElementById("disease-filter");
+    const searchInput = document.getElementById("search-input");
+    
+    const doctorId = doctorFilter ? doctorFilter.value : "";
+    const diseaseId = diseaseFilter ? diseaseFilter.value : "";
+    const searchKeyword = searchInput ? searchInput.value.toLowerCase().trim() : "";
+    
+    const patientCards = document.querySelectorAll(".patient-mini-card");
+    let visibleCount = 0;
+    
+    patientCards.forEach(card => {
+        let show = true;
+        
+        // 檢查醫師過濾
+        if (doctorId && card.dataset.doctor !== doctorId) {
+            show = false;
+        }
+        
+        // 檢查疾病過濾
+        if (show && diseaseId && card.dataset.disease !== diseaseId) {
+            show = false;
+        }
+        
+        // 檢查關鍵字搜尋
+        if (show && searchKeyword) {
+            const name = (card.dataset.name || "").toLowerCase();
+            const mrn = (card.dataset.mrn || "").toLowerCase();
+            const idnum = (card.dataset.idnum || "").toLowerCase();
+            
+            if (!name.includes(searchKeyword) && 
+                !mrn.includes(searchKeyword) && 
+                !idnum.includes(searchKeyword)) {
+                show = false;
+            }
+        }
+        
+        // 顯示或隱藏卡片
+        const link = card.closest(".patient-card-link");
+        if (link) {
+            link.style.display = show ? "block" : "none";
+            if (show) visibleCount++;
+        }
+    });
+    
+    // 更新計數
+    const resultCount = document.querySelector(".result-count");
+    if (resultCount) {
+        resultCount.textContent = `共 ${visibleCount} 位病患`;
+    }
+    
+    // 顯示無資料訊息
+    const noPatientsMsg = document.querySelector(".no-patients-message");
+    if (noPatientsMsg) {
+        noPatientsMsg.style.display = visibleCount === 0 ? "flex" : "none";
+    }
+}
