@@ -133,8 +133,8 @@ def home():
                 'next_followup_date': record_dict['next_followup_date']
             })
         
-        # 檢查是否需要生物製劑針數不足提醒（<= 3 針）
-        if record_dict['type'] == 'biological' and record_dict['remain_dose'] is not None and record_dict['remain_dose'] <= 3:
+        # 檢查是否需要生物製劑針數不足提醒（<= 1 針）
+        if record_dict['type'] == 'biological' and record_dict['remain_dose'] is not None and record_dict['remain_dose'] <= 1:
             patient_reminders[patient_id]['reminder_items'].append({
                 'reminder_type': 'dose',
                 'remain_dose': record_dict['remain_dose'],
