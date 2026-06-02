@@ -48,7 +48,7 @@ function updateMedicineOptions() {
             medicineSelect.innerHTML = '<option value="">請選擇藥品</option>';
             data.medicines.forEach(medicine => {
                 const option = document.createElement('option');
-                option.value = medicine.name;
+                option.value = medicine.id;  // 傳送 ID 而非名稱
                 option.textContent = medicine.name;
                 medicineSelect.appendChild(option);
             });

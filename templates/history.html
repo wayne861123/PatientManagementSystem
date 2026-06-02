@@ -23,7 +23,7 @@
                     </div>
                     <div class="history-item">
                         <label>藥物名稱</label>
-                        <p>{{ his.name }}</p>
+                        <p>{{ his.display_name if his.display_name else his.name }}</p>
                     </div>
                 </div>
                 <div>

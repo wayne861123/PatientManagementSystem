@@ -123,7 +123,7 @@
                             {% set medicine_type = "-" %}
                         {% endif %}
                         <div class="info-item"><label>藥物類型</label><span>{{ medicine_type }}</span></div>
-                        <div class="info-item"><label>藥物名稱</label><span>{{ last_medicine_record.name if last_medicine_record.name else '-' }}</span></div>
+                        <div class="info-item"><label>藥物名稱</label><span>{{ last_medicine_record.display_name if last_medicine_record.display_name else '-' }}</span></div>
                         {% if medicine_type == "生物製劑" %}
                             <div class="info-item">
                                 <label>申請類型</label>
@@ -439,11 +439,11 @@
             }
         });
     }
-    async function getTraditionalMedicineIntervalDays(medicineName) {
+    async function getTraditionalMedicineIntervalDays(medicineId) {
         const response = await fetch("{{ url_for('api_get_medicine_intervals') }}", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ medicine_name: medicineName })
+            body: JSON.stringify({ medicine_id: medicineId })
         });
         const data = await response.json();
         return data.intervals || 0;
@@ -494,11 +494,11 @@
         
         // 這裡可以呼叫 API 取得對應的針數設定
         // 現階段保持手動輸入
-        console.log(`藥物: ${medicineName}, 申請類型: ${applyType}`);
+        console.log(`藥物ID: ${medicineName}, 申請類型: ${applyType}`);
         fetch("{{ url_for('api_get_dose_count') }}", {
             method: "POST",
             headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({medicineName, applyType})
+            body: JSON.stringify({medicineId: medicineName, applyType})
         }).then(response => response.json()
         ).then(data => {
             if (data.success === true) {
@@ -573,7 +573,7 @@
                     {% if medicine.disable == 1 %}
                     {% continue %}
                     {% endif %}
-                    <option value="{{ medicine.name }}">{{ medicine.name }}</option>
+                    <option value="{{ medicine.id }}">{{ medicine.name }}</option>
                 {% endfor %}
             `;
             medicineNameSelect.disabled = false;
@@ -589,7 +589,7 @@
                     {% if medicine.disable == 1 %}
                     {% continue %}
                     {% endif %}
-                    <option value="{{ medicine.name }}">{{ medicine.name }}</option>
+                    <option value="{{ medicine.id }}">{{ medicine.name }}</option>
                 {% endfor %}
             `;
             medicineNameSelect.disabled = false;

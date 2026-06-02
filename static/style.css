@@ -139,7 +139,7 @@ select {
     border-bottom: 3px solid #D4AF37;
     width: 100%;
     color: #000000;
-    padding-bottom: 10px;
+    /* padding-bottom: 1px; */
 }
 
 .card a {
@@ -347,6 +347,23 @@ select {
 /* --------------------------------------------------------------------------
    5. Buttons - 按鈕
    -------------------------------------------------------------------------- */
+
+/* 按鈕群組 - 水平排列、統一寬度 */
+.btn-group {
+    display: grid;
+    flex-direction: row;
+    gap: 8px;
+    justify-content: center;
+    width: 100%;
+    grid-template-columns: 80px 80px;
+    margin-top: 5px;
+}
+
+.btn-group .general-btn {
+    min-width: 80px;
+    text-align: center;
+    margin-bottom: 0;
+}
 
 /* 通用按鈕 */
 .general-btn,

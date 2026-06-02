@@ -4,10 +4,12 @@
 管理病患資料、用藥記錄、檢查項目等
 """
 
-from flask import Flask, render_template, request, redirect, url_for, request as flask_request
+from flask import Flask, render_template, request, redirect, url_for, request as flask_request, send_file, Response
 from database import init_db, get_connection, validate_required_fields, safe_date, safe_int, log_db_action, logger
 from functools import wraps
 from datetime import datetime, timedelta
+import os
+import uuid
 
 # ===========================================================================
 # 錯誤處理裝飾器
@@ -55,13 +57,15 @@ def home():
     three_days_later = (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")
     
     # 查詢所有病患的最新一筆記錄（先合併兩表，再取最新）
+    # 注意：name 欄位現在儲存的是 medicine_id，需要 JOIN 取得實際名稱
     cursor.execute("""
         SELECT 
             patient_id,
-            name as medicine_name,
+            COALESCE(t.name, b.name) as medicine_id,
+            COALESCE(t.name, b.name) as medicine_name,
             followup_date,
             next_followup_date,
-            type,
+            all_records.type,
             remain_dose
         FROM (
             SELECT 
@@ -82,6 +86,8 @@ def home():
                 remain_dose
             FROM biological_medicine_record
         ) all_records
+        LEFT JOIN traditional_medicines t ON all_records.type = 'traditional' AND all_records.name = t.id
+        LEFT JOIN biological_medicines b ON all_records.type = 'biological' AND all_records.name = b.id
         ORDER BY followup_date DESC
     """)
     latest_records = cursor.fetchall()
@@ -466,6 +472,21 @@ def patient_detail(patient_id):
         last_medicine_record = None
         medicine_record = None
 
+    # 透過 medicine_id 取得藥物名稱（name 欄位現在儲存的是 ID）
+    if last_medicine_record:
+        medicine_id = last_medicine_record.get("name")
+        medicine_type = last_medicine_record.get("type")
+        if medicine_id:
+            if medicine_type == "traditional":
+                cursor.execute("SELECT name FROM traditional_medicines WHERE id = ?", (medicine_id,))
+            else:
+                cursor.execute("SELECT name FROM biological_medicines WHERE id = ?", (medicine_id,))
+            medicine_row = cursor.fetchone()
+            if medicine_row:
+                last_medicine_record["display_name"] = medicine_row["name"]
+            else:
+                last_medicine_record["display_name"] = medicine_id  # 如果找不到就用 ID
+
     # 取得檢查項目列表
     cursor.execute("SELECT * FROM examinations WHERE disable IS NULL OR disable = 0")
     examinations = cursor.fetchall()
@@ -563,10 +584,22 @@ def all_medicine_record(patient_id):
         bio_date = datetime.strptime(bio["followup_date"], '%Y-%m-%d') if bio else datetime(1911, 1, 1)
         if trad_date > bio_date:
             trad["type"] = "traditional"
+            # 透過 medicine_id 取得藥物名稱
+            medicine_id = trad.get("name")
+            if medicine_id:
+                cursor.execute("SELECT name FROM traditional_medicines WHERE id = ?", (medicine_id,))
+                medicine_row = cursor.fetchone()
+                trad["display_name"] = medicine_row["name"] if medicine_row else medicine_id
             history.append(trad)
             trad = dict(traditional_medicine_record.pop()) if traditional_medicine_record else None
         else:
             bio["type"] = "biological"
+            # 透過 medicine_id 取得藥物名稱
+            medicine_id = bio.get("name")
+            if medicine_id:
+                cursor.execute("SELECT name FROM biological_medicines WHERE id = ?", (medicine_id,))
+                medicine_row = cursor.fetchone()
+                bio["display_name"] = medicine_row["name"] if medicine_row else medicine_id
             history.append(bio)
             bio = dict(biological_medicine_record.pop()) if biological_medicine_record else None
 
@@ -907,7 +940,7 @@ def api_add_medicine_record():
     """新增用藥記錄 API"""
     data = request.form
     patient_id = data.get("patient-id")
-    medicine_name = data.get("medicine-name")
+    medicine_id = data.get("medicine-name")  # 改為使用 medicine_id
     medicine_type = data.get("medicine-type")
     apply_type = data.get("apply-type")
     last_followup_date = data.get("last-followup-date")
@@ -915,6 +948,10 @@ def api_add_medicine_record():
     dose = data.get("dose")
     remark = data.get("remark")
     additional_medicine = data.get("additional-medicine")
+
+    # 驗證 medicine_id
+    if not medicine_id:
+        return {"success": False, "message": "請選擇藥物"}
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -941,12 +978,19 @@ def api_add_medicine_record():
     table_name = ""
     new_data = {}
     if medicine_type == "traditional":
+        # 取得藥物名稱用於顯示
+        cursor.execute("SELECT name FROM traditional_medicines WHERE id = ?", (medicine_id,))
+        medicine = cursor.fetchone()
+        if medicine is None:
+            conn.close()
+            return {"success": False, "message": "找不到指定的藥物"}
+        
         cursor.execute("""
             INSERT INTO traditional_medicine_record (record_id, patient_id, name, followup_date, next_followup_date, remark, additional_medicine)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (record_id, patient_id, medicine_name, last_followup_date, next_followup_date, remark, additional_medicine or ""))
+        """, (record_id, patient_id, medicine_id, last_followup_date, next_followup_date, remark, additional_medicine or ""))
         table_name = "traditional_medicine_record"
-        new_data = {"record_id": record_id, "patient_id": patient_id, "name": medicine_name, 
+        new_data = {"record_id": record_id, "patient_id": patient_id, "name": medicine_id, 
                    "followup_date": last_followup_date, "next_followup_date": next_followup_date, "remark": remark, "additional_medicine": additional_medicine or ""}
 
     elif medicine_type == "biological":
@@ -955,7 +999,8 @@ def api_add_medicine_record():
             conn.close()
             return {"success": False, "message": "無效的申請類型"}
         apply_column = "first_apply_dose" if apply_type == "first" else "continue_apply_dose"
-        cursor.execute(f"SELECT {apply_column} AS apply_dose FROM biological_medicines WHERE name = ?", (medicine_name,))
+        # 使用 id 查詢藥物
+        cursor.execute(f"SELECT {apply_column} AS apply_dose FROM biological_medicines WHERE id = ?", (medicine_id,))
         biological_medicine = cursor.fetchone()
         
         if biological_medicine is None:
@@ -965,9 +1010,9 @@ def api_add_medicine_record():
         cursor.execute("""
             INSERT INTO biological_medicine_record (record_id, patient_id, name, apply_type, remain_dose, followup_date, next_followup_date, remark, additional_medicine)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (record_id, patient_id, medicine_name, apply_type, biological_medicine["apply_dose"], last_followup_date, next_followup_date, remark, additional_medicine or ""))
+        """, (record_id, patient_id, medicine_id, apply_type, biological_medicine["apply_dose"], last_followup_date, next_followup_date, remark, additional_medicine or ""))
         table_name = "biological_medicine_record"
-        new_data = {"record_id": record_id, "patient_id": patient_id, "name": medicine_name,
+        new_data = {"record_id": record_id, "patient_id": patient_id, "name": medicine_id,
                    "apply_type": apply_type, "remain_dose": biological_medicine["apply_dose"],
                    "followup_date": last_followup_date, "next_followup_date": next_followup_date, "remark": remark, "additional_medicine": additional_medicine or ""}
 
@@ -1119,13 +1164,13 @@ def api_get_medicine_intervals():
     """取得藥物回診間隔 API"""
     conn = get_connection()
     cursor = conn.cursor()
-    medicine_name = request.get_json().get("medicine_name")
-    if not medicine_name:
+    medicine_id = request.get_json().get("medicine_id")
+    if not medicine_id:
         conn.close()
-        return {"success": False, "message": "請提供藥物名稱"}, 400
+        return {"success": False, "message": "請提供藥物ID"}, 400
     
-    cursor.execute("SELECT followup_interval FROM traditional_medicines WHERE name = ?",
-                   (medicine_name,))
+    cursor.execute("SELECT followup_interval FROM traditional_medicines WHERE id = ?",
+                   (medicine_id,))
     traditional_medicine = cursor.fetchone()
     conn.close()
     
@@ -1461,6 +1506,294 @@ def api_delete_disease():
         old_data=old_data,
         new_data=new_data,
         sql_statement=f"UPDATE diseases SET disable=1 WHERE id={id_}",
+        operator="api",
+        ip_address=flask_request.remote_addr
+    )
+    conn.commit()
+    conn.close()
+    return {"success": True}
+
+
+@app.route("/api/update/doctor", methods=["POST"])
+def api_update_doctor():
+    """更新醫師 API"""
+    data = request.get_json()
+    id_ = data.get("id")
+    name = data.get("name")
+    
+    # 必填欄位驗證
+    if not id_:
+        return {"success": False, "message": "缺少醫師ID"}, 400
+    if not name or not name.strip():
+        return {"success": False, "message": "請輸入醫師名稱"}, 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 取得舊資料
+    cursor.execute("SELECT * FROM doctors WHERE id = ?", (id_,))
+    old_data_row = cursor.fetchone()
+    if old_data_row is None:
+        conn.close()
+        return {"success": False, "message": "找不到醫師"}, 404
+    old_data = dict(old_data_row)
+    
+    cursor.execute("UPDATE doctors SET name = ? WHERE id = ?", (name.strip(), id_))
+    
+    # 記錄審計日誌
+    new_data = dict(old_data)
+    new_data["name"] = name.strip()
+    log_db_action(
+        cursor,
+        action="UPDATE",
+        table_name="doctors",
+        record_id=id_,
+        old_data=old_data,
+        new_data=new_data,
+        sql_statement=f"UPDATE doctors SET name='{name.strip()}' WHERE id={id_}",
+        operator="api",
+        ip_address=flask_request.remote_addr
+    )
+    conn.commit()
+    conn.close()
+    return {"success": True}
+
+
+@app.route("/api/update/disease", methods=["POST"])
+def api_update_disease():
+    """更新疾病 API"""
+    data = request.get_json()
+    id_ = data.get("id")
+    name = data.get("name")
+    
+    # 必填欄位驗證
+    if not id_:
+        return {"success": False, "message": "缺少疾病ID"}, 400
+    if not name or not name.strip():
+        return {"success": False, "message": "請輸入疾病名稱"}, 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 取得舊資料
+    cursor.execute("SELECT * FROM diseases WHERE id = ?", (id_,))
+    old_data_row = cursor.fetchone()
+    if old_data_row is None:
+        conn.close()
+        return {"success": False, "message": "找不到疾病"}, 404
+    old_data = dict(old_data_row)
+    
+    cursor.execute("UPDATE diseases SET name = ? WHERE id = ?", (name.strip(), id_))
+    
+    # 記錄審計日誌
+    new_data = dict(old_data)
+    new_data["name"] = name.strip()
+    log_db_action(
+        cursor,
+        action="UPDATE",
+        table_name="diseases",
+        record_id=id_,
+        old_data=old_data,
+        new_data=new_data,
+        sql_statement=f"UPDATE diseases SET name='{name.strip()}' WHERE id={id_}",
+        operator="api",
+        ip_address=flask_request.remote_addr
+    )
+    conn.commit()
+    conn.close()
+    return {"success": True}
+
+
+@app.route("/api/update/examination", methods=["POST"])
+def api_update_examination():
+    """更新檢查項目 API"""
+    data = request.get_json()
+    id_ = data.get("id")
+    name = data.get("name")
+    interval = data.get("interval")
+    
+    # 必填欄位驗證
+    if not id_:
+        return {"success": False, "message": "缺少檢查項目ID"}, 400
+    if not name or not name.strip():
+        return {"success": False, "message": "請輸入檢查項目名稱"}, 400
+    if not interval:
+        return {"success": False, "message": "請輸入檢查間隔週數"}, 400
+    try:
+        interval_int = int(interval)
+        if interval_int <= 0:
+            return {"success": False, "message": "檢查間隔必須大於0"}, 400
+    except ValueError:
+        return {"success": False, "message": "檢查間隔必須為數字"}, 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 取得舊資料
+    cursor.execute("SELECT * FROM examinations WHERE id = ?", (id_,))
+    old_data_row = cursor.fetchone()
+    if old_data_row is None:
+        conn.close()
+        return {"success": False, "message": "找不到檢查項目"}, 404
+    old_data = dict(old_data_row)
+    
+    cursor.execute("UPDATE examinations SET name = ?, interval = ? WHERE id = ?", (name.strip(), interval_int, id_))
+    
+    # 記錄審計日誌
+    new_data = dict(old_data)
+    new_data["name"] = name.strip()
+    new_data["interval"] = interval_int
+    log_db_action(
+        cursor,
+        action="UPDATE",
+        table_name="examinations",
+        record_id=id_,
+        old_data=old_data,
+        new_data=new_data,
+        sql_statement=f"UPDATE examinations SET name='{name.strip()}', interval={interval_int} WHERE id={id_}",
+        operator="api",
+        ip_address=flask_request.remote_addr
+    )
+    conn.commit()
+    conn.close()
+    return {"success": True}
+
+
+@app.route("/api/update/medicine", methods=["POST"])
+def api_update_medicine():
+    """更新藥物 API"""
+    data = request.get_json()
+    id_ = data.get("id")
+    name = data.get("name")
+    mtype = data.get("type")
+    followup_interval = data.get("followup_interval")
+    first_apply_dose = data.get("first_apply_dose")
+    continue_apply_dose = data.get("continue_apply_dose")
+
+    # 必填欄位驗證
+    if not id_:
+        return {"success": False, "message": "缺少藥物ID"}, 400
+    if not name or not name.strip():
+        return {"success": False, "message": "請輸入藥物名稱"}, 400
+    if not mtype:
+        return {"success": False, "message": "請選擇藥物類型"}, 400
+    
+    # 類型驗證 - 使用白名單
+    if mtype not in ("傳統用藥", "生物製劑"):
+        return {"success": False, "message": "無效的藥物類型"}, 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if mtype == "傳統用藥":
+        if not followup_interval:
+            conn.close()
+            return {"success": False, "message": "請輸入回診間隔週數"}, 400
+        try:
+            interval_int = int(followup_interval)
+        except ValueError:
+            conn.close()
+            return {"success": False, "message": "回診間隔必須為數字"}, 400
+        
+        # 取得舊資料
+        cursor.execute("SELECT * FROM traditional_medicines WHERE id = ?", (id_,))
+        old_data_row = cursor.fetchone()
+        if old_data_row is None:
+            conn.close()
+            return {"success": False, "message": "找不到藥物"}, 404
+        old_data = dict(old_data_row)
+        
+        cursor.execute("UPDATE traditional_medicines SET name = ?, followup_interval = ? WHERE id = ?",
+                      (name.strip(), interval_int, id_))
+        table_name = "traditional_medicines"
+        new_data = dict(old_data)
+        new_data["name"] = name.strip()
+        new_data["followup_interval"] = interval_int
+    elif mtype == "生物製劑":
+        if not first_apply_dose or not continue_apply_dose:
+            conn.close()
+            return {"success": False, "message": "請輸入申請針數"}, 400
+        try:
+            first_dose = int(first_apply_dose)
+            continue_dose = int(continue_apply_dose)
+        except ValueError:
+            conn.close()
+            return {"success": False, "message": "申請針數必須為數字"}, 400
+        
+        # 取得舊資料
+        cursor.execute("SELECT * FROM biological_medicines WHERE id = ?", (id_,))
+        old_data_row = cursor.fetchone()
+        if old_data_row is None:
+            conn.close()
+            return {"success": False, "message": "找不到藥物"}, 404
+        old_data = dict(old_data_row)
+        
+        cursor.execute("UPDATE biological_medicines SET name = ?, first_apply_dose = ?, continue_apply_dose = ? WHERE id = ?",
+                      (name.strip(), first_dose, continue_dose, id_))
+        table_name = "biological_medicines"
+        new_data = dict(old_data)
+        new_data["name"] = name.strip()
+        new_data["first_apply_dose"] = first_dose
+        new_data["continue_apply_dose"] = continue_dose
+
+    conn.commit()
+    
+    # 記錄審計日誌
+    log_db_action(
+        cursor,
+        action="UPDATE",
+        table_name=table_name,
+        record_id=id_,
+        old_data=old_data,
+        new_data=new_data,
+        sql_statement=f"UPDATE {table_name} ...",
+        operator="api",
+        ip_address=flask_request.remote_addr
+    )
+    conn.commit()
+    conn.close()
+
+    logger.info(f"更新藥物: table={table_name}, id={id_}, name={name}")
+    return {"success": True}
+
+
+@app.route("/api/update/additional_medicine", methods=["POST"])
+def api_update_additional_medicine():
+    """更新額外藥物 API"""
+    data = request.get_json()
+    id_ = data.get("id")
+    name = data.get("name")
+
+    # 必填欄位驗證
+    if not id_:
+        return {"success": False, "message": "缺少藥物ID"}, 400
+    if not name or not name.strip():
+        return {"success": False, "message": "請輸入藥物名稱"}, 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 取得舊資料
+    cursor.execute("SELECT * FROM additional_medicines WHERE id = ?", (id_,))
+    old_data_row = cursor.fetchone()
+    if old_data_row is None:
+        conn.close()
+        return {"success": False, "message": "找不到藥物"}, 404
+    old_data = dict(old_data_row)
+    
+    cursor.execute("UPDATE additional_medicines SET name = ? WHERE id = ?", (name.strip(), id_))
+    
+    # 記錄審計日誌
+    new_data = dict(old_data)
+    new_data["name"] = name.strip()
+    log_db_action(
+        cursor,
+        action="UPDATE",
+        table_name="additional_medicines",
+        record_id=id_,
+        old_data=old_data,
+        new_data=new_data,
+        sql_statement=f"UPDATE additional_medicines SET name='{name.strip()}' WHERE id={id_}",
         operator="api",
         ip_address=flask_request.remote_addr
     )
@@ -1891,6 +2224,198 @@ def api_pasi_save():
     
     logger.info(f"PASI 記錄已儲存: id={record_id}, score={pasi_score_val}")
     return {"success": True, "id": record_id}
+
+
+# ===========================================================================
+# 文件管理功能
+# ===========================================================================
+
+# 設定上傳資料夾
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "documents")
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'gif'}
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+def allowed_file(filename):
+    """檢查檔案副檔名是否允許"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def get_file_type(filename):
+    """取得檔案類型"""
+    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+    if ext == 'pdf':
+        return 'pdf'
+    elif ext in ['doc', 'docx']:
+        return 'word'
+    elif ext in ['xls', 'xlsx']:
+        return 'excel'
+    elif ext in ['png', 'jpg', 'jpeg', 'gif']:
+        return 'image'
+    return 'other'
+
+
+@app.route("/management/documents")
+def management_documents():
+    """文件管理頁面"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM documents ORDER BY created_at DESC")
+    documents = cursor.fetchall()
+    conn.close()
+    return render_template("documents.html", documents=documents)
+
+
+@app.route("/api/upload/document", methods=["POST"])
+def api_upload_document():
+    """上傳文件 API"""
+    if 'file' not in request.files:
+        return {"success": False, "message": "沒有上傳檔案"}, 400
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return {"success": False, "message": "請選擇檔案"}, 400
+    
+    if not allowed_file(file.filename):
+        return {"success": False, "message": "不允許的檔案類型"}, 400
+    
+    # 檢查檔案大小
+    file.seek(0, 2)  # 移到檔案結尾
+    file_size = file.tell()
+    file.seek(0)  # 重置指標
+    
+    if file_size > MAX_FILE_SIZE:
+        return {"success": False, "message": "檔案大小超過 10MB 限制"}, 400
+    
+    original_name = file.filename
+    stored_name = f"{uuid.uuid4().hex}_{original_name}"
+    file_type = get_file_type(original_name)
+    
+    # 儲存檔案
+    file_path = os.path.join(UPLOAD_FOLDER, stored_name)
+    file.save(file_path)
+    
+    # 寫入資料庫
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO documents (original_name, stored_name, file_type, file_size)
+        VALUES (?, ?, ?, ?)
+    """, (original_name, stored_name, file_type, file_size))
+    record_id = cursor.lastrowid
+    
+    log_db_action(
+        cursor,
+        action="INSERT",
+        table_name="documents",
+        record_id=record_id,
+        old_data=None,
+        new_data={"id": record_id, "original_name": original_name, "stored_name": stored_name, "file_type": file_type, "file_size": file_size},
+        sql_statement=f"INSERT INTO documents (original_name, stored_name, file_type, file_size) VALUES ('{original_name}', '{stored_name}', '{file_type}', {file_size})",
+        operator="web",
+        ip_address=flask_request.remote_addr
+    )
+    
+    conn.commit()
+    conn.close()
+    
+    logger.info(f"文件上傳成功: id={record_id}, name={original_name}")
+    return {"success": True, "id": record_id, "original_name": original_name, "file_type": file_type}
+
+
+@app.route("/document/<int:doc_id>")
+def view_document(doc_id):
+    """預覽文件"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM documents WHERE id = ?", (doc_id,))
+    doc = cursor.fetchone()
+    conn.close()
+    
+    if doc is None:
+        return "文件不存在", 404
+    
+    file_path = os.path.join(UPLOAD_FOLDER, doc["stored_name"])
+    if not os.path.exists(file_path):
+        return "檔案不存在", 404
+    
+    file_type = doc["file_type"]
+    original_name = doc["original_name"]
+    
+    if file_type == 'pdf':
+        # PDF 直接在瀏覽器顯示
+        return send_file(file_path, mimetype='application/pdf', as_attachment=False, download_name=original_name)
+    elif file_type == 'image':
+        # 圖片直接顯示
+        return send_file(file_path, mimetype=f'image/{file_type}')
+    else:
+        # Word/Excel 需要下載（因為無法直接內嵌）
+        return send_file(file_path, as_attachment=True, download_name=original_name)
+
+
+@app.route("/document/<int:doc_id>/raw")
+def document_raw(doc_id):
+    """取得文件原始資料（用於前端轉換）"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM documents WHERE id = ?", (doc_id,))
+    doc = cursor.fetchone()
+    conn.close()
+    
+    if doc is None:
+        return {"success": False, "message": "文件不存在"}, 404
+    
+    file_path = os.path.join(UPLOAD_FOLDER, doc["stored_name"])
+    if not os.path.exists(file_path):
+        return {"success": False, "message": "檔案不存在"}, 404
+    
+    return send_file(file_path, as_attachment=False)
+
+
+@app.route("/api/delete/document/<int:doc_id>", methods=["DELETE"])
+def api_delete_document(doc_id):
+    """刪除文件 API"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 取得檔案資訊
+    cursor.execute("SELECT * FROM documents WHERE id = ?", (doc_id,))
+    doc = cursor.fetchone()
+    
+    if doc is None:
+        conn.close()
+        return {"success": False, "message": "找不到文件"}, 404
+    
+    old_data = dict(doc)
+    
+    # 刪除實體檔案
+    file_path = os.path.join(UPLOAD_FOLDER, doc["stored_name"])
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    
+    # 刪除資料庫記錄
+    cursor.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
+    
+    log_db_action(
+        cursor,
+        action="DELETE",
+        table_name="documents",
+        record_id=doc_id,
+        old_data=old_data,
+        new_data=None,
+        sql_statement=f"DELETE FROM documents WHERE id = {doc_id}",
+        operator="web",
+        ip_address=flask_request.remote_addr
+    )
+    
+    conn.commit()
+    conn.close()
+    
+    logger.info(f"文件刪除成功: id={doc_id}, name={old_data['original_name']}")
+    return {"success": True}
 
 
 # ===========================================================================

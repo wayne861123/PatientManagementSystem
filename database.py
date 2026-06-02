@@ -164,6 +164,14 @@ TABLES = {
         "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
         "name": "TEXT",
         "disable": "INTEGER"
+    },
+    "documents": {
+        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "original_name": "TEXT",
+        "stored_name": "TEXT",
+        "file_type": "TEXT",
+        "file_size": "INTEGER",
+        "created_at": "TEXT DEFAULT (datetime('now', 'localtime'))"
     }
 }
 
