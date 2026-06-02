@@ -140,5 +140,4 @@ wen2/
     ├── history.html
     ├── management.html
     ├── pasi_score.html
-    ├── injection_frequency.html
     └── new_medication.html

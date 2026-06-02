@@ -231,9 +231,7 @@ def pasi_score():
 
 
 @app.route("/injection-frequency")
-def injection_frequency():
     """打針頻率頁面"""
-    return render_template("injection_frequency.html")
 
 
 @app.route("/all-patients")
