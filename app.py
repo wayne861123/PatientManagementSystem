@@ -230,10 +230,6 @@ def pasi_score():
     return render_template("pasi_score.html")
 
 
-@app.route("/injection-frequency")
-    """打針頻率頁面"""
-
-
 @app.route("/all-patients")
 def all_patients():
     """所有病患列表頁面 - 含篩選功能"""
