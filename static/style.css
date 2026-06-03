@@ -355,7 +355,7 @@ select {
     gap: 8px;
     justify-content: center;
     width: 100%;
-    grid-template-columns: 80px 80px;
+    grid-template-columns: 80px;
     margin-top: 5px;
 }
 

@@ -148,3 +148,4 @@ logs/
 # Misc
 *.bak
 *.tmp
+documents/*

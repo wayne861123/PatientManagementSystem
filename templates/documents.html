@@ -9,26 +9,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <!-- 上傳區域 -->
-    <div class="grid">
+    <div>
         <div class="card sidebar-transparent">
             <h2>上傳新文件</h2>
             <form id="upload-form" enctype="multipart/form-data">
-                <div class="form-group">
-                    <input type="file" id="file-input" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif">
-                </div>
+                <input type="file" id="file-input" name="file" accept=".pdf,application/pdf" style="display: none;">
                 <div class="btn-group">
-                    <a href="javascript:void(0);" class="general-btn" onclick="uploadDocument()">上傳</a>
+                    <a href="javascript:void(0);" class="general-btn" onclick="triggerFileUpload()">上傳</a>
                 </div>
             </form>
             <p style="font-size: 12px; color: #666; margin-top: 10px;">
-                支援格式：PDF, Word (doc/docx), Excel (xls/xlsx), 圖片 (png/jpg/gif)<br>
+                支援格式：PDF<br>
                 檔案大小限制：10MB
             </p>
         </div>
     </div>
 
     <!-- 文件列表 -->
-    <div class="grid" style="margin-top: 20px;">
+    <div style="margin-top: 20px;">
         <h2>已上傳文件</h2>
         {% if documents %}
             <table class="document-table">
@@ -123,11 +121,11 @@
             background-color: #f9f9f9;
         }
         .document-table a {
-            color: #3498db;
+            <!-- color: #3498db; -->
             text-decoration: none;
         }
         .document-table a:hover {
-            text-decoration: underline;
+            <!-- text-decoration: underline; -->
         }
         
         .modal {
@@ -234,6 +232,16 @@
     </style>
 
     <script>
+        function triggerFileUpload() {
+            document.getElementById('file-input').click();
+        }
+        
+        document.getElementById('file-input').addEventListener('change', function() {
+            if (this.files.length > 0) {
+                uploadDocument();
+            }
+        });
+        
         function uploadDocument() {
             const fileInput = document.getElementById('file-input');
             const file = fileInput.files[0];

@@ -2226,7 +2226,7 @@ def api_pasi_save():
 
 # 設定上傳資料夾
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "documents")
-ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_EXTENSIONS = {'pdf'}  # 只允許 PDF
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -2235,6 +2235,31 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def allowed_file(filename):
     """檢查檔案副檔名是否允許"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def validate_pdf_content(file):
+    """驗證檔案是否為真正的 PDF（檢查魔數和 MIME 類型）"""
+    import mimetypes
+    
+    # 1. 檢查檔案副檔名
+    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+    if ext != 'pdf':
+        return False, "檔案副檔名必須為 PDF"
+    
+    # 2. 檢查 MIME 類型
+    mime_type = mimetypes.guess_type(file.filename)[0]
+    if mime_type != 'application/pdf':
+        return False, "檔案類型必須是 PDF"
+    
+    # 3. 檢查檔案魔數 (PDF 文件開頭為 %PDF)
+    file.seek(0)
+    header = file.read(5)
+    file.seek(0)
+    
+    if not header.startswith(b'%PDF-'):
+        return False, "檔案內容不是有效的 PDF 格式"
+    
+    return True, ""
 
 
 def get_file_type(filename):
@@ -2275,6 +2300,11 @@ def api_upload_document():
     
     if not allowed_file(file.filename):
         return {"success": False, "message": "不允許的檔案類型"}, 400
+    
+    # 額外的 PDF 內容驗證（魔數檢查）
+    is_valid_pdf, error_msg = validate_pdf_content(file)
+    if not is_valid_pdf:
+        return {"success": False, "message": error_msg}, 400
     
     # 檢查檔案大小
     file.seek(0, 2)  # 移到檔案結尾
