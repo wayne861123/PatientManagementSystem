@@ -10,26 +10,6 @@ from functools import wraps
 from datetime import datetime, timedelta
 import os
 import uuid
-
-# ===========================================================================
-# 錯誤處理裝飾器
-# ===========================================================================
-
-def handle_errors(f):
-    """通用錯誤處理裝飾器"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except sqlite3.Error as e:
-            print(f"[ database error ] {e}")
-            return {"success": False, "message": "資料庫錯誤，請稍後再試"}, 500
-        except Exception as e:
-            print(f"[ error ] {e}")
-            return {"success": False, "message": "發生錯誤，請稍後再試"}, 500
-    return decorated_function
-
-
 import sqlite3
 
 # 初始化 Flask 應用
@@ -255,7 +235,7 @@ def all_patients():
         FROM patients p
         LEFT JOIN doctors d ON p.doctor_id = d.id
         LEFT JOIN diseases dis ON p.disease_id = dis.id
-        WHERE (p.status IS NULL OR p.status = '評估中' OR p.status = '用藥中')
+        WHERE (p.status IS NULL OR p.status IN ('評估中', '用藥中', '下車'))
     """
     params = []
     
@@ -568,34 +548,68 @@ def all_medicine_record(patient_id):
     cursor.execute("SELECT * FROM biological_medicine_record WHERE patient_id = ? ORDER BY id ASC", (patient_id,))
     biological_medicine_record = cursor.fetchall()
 
-    # 合併並依日期排序
-    history = []
-    trad = dict(traditional_medicine_record.pop()) if traditional_medicine_record else None
-    bio = dict(biological_medicine_record.pop()) if biological_medicine_record else None
+    # 批次載入所有藥物名稱（消除 N+1 查詢）
+    all_medicine_ids = set()
+    for r in traditional_medicine_record:
+        if r["name"]:
+            all_medicine_ids.add(r["name"])
+    for r in biological_medicine_record:
+        if r["name"]:
+            all_medicine_ids.add(r["name"])
 
-    while trad or bio:
-        trad_date = datetime.strptime(trad["followup_date"], '%Y-%m-%d') if trad else datetime(1911, 1, 1)
-        bio_date = datetime.strptime(bio["followup_date"], '%Y-%m-%d') if bio else datetime(1911, 1, 1)
-        if trad_date > bio_date:
-            trad["type"] = "traditional"
-            # 透過 medicine_id 取得藥物名稱
-            medicine_id = trad.get("name")
-            if medicine_id:
-                cursor.execute("SELECT name FROM traditional_medicines WHERE id = ?", (medicine_id,))
-                medicine_row = cursor.fetchone()
-                trad["display_name"] = medicine_row["name"] if medicine_row else medicine_id
-            history.append(trad)
-            trad = dict(traditional_medicine_record.pop()) if traditional_medicine_record else None
+    medicine_name_map = {}
+    if all_medicine_ids:
+        placeholders = ",".join("?" * len(all_medicine_ids))
+        cursor.execute(
+            f"SELECT id, name FROM traditional_medicines WHERE id IN ({placeholders})",
+            list(all_medicine_ids)
+        )
+        for r in cursor.fetchall():
+            medicine_name_map[r["id"]] = r["name"]
+        cursor.execute(
+            f"SELECT id, name FROM biological_medicines WHERE id IN ({placeholders})",
+            list(all_medicine_ids)
+        )
+        for r in cursor.fetchall():
+            medicine_name_map[r["id"]] = r["name"]
+
+    # 將 list 反轉，使 pop() 拿最新（ORDER BY id ASC → reverse 後 pop() = 最新）
+    trad_stack = [dict(r) for r in traditional_medicine_record]
+    trad_stack.reverse()
+    bio_stack = [dict(r) for r in biological_medicine_record]
+    bio_stack.reverse()
+
+    def _safe_date(s):
+        """安全解析日期字串"""
+        if not s:
+            return None
+        try:
+            return datetime.strptime(s, "%Y-%m-%d")
+        except (ValueError, TypeError):
+            return None
+
+    # 合併並依日期排序（最新優先）
+    history = []
+    while trad_stack or bio_stack:
+        trad = trad_stack[-1] if trad_stack else None
+        bio = bio_stack[-1] if bio_stack else None
+
+        trad_date = _safe_date(trad["followup_date"]) if trad else None
+        bio_date = _safe_date(bio["followup_date"]) if bio else None
+
+        # None 日期視為最舊；同日時 trad 優先
+        if (trad and bio and trad_date is not None and bio_date is not None and trad_date >= bio_date) or \
+           (trad and (bio is None or bio_date is None)):
+            record = trad_stack.pop()
+            record["type"] = "traditional"
         else:
-            bio["type"] = "biological"
-            # 透過 medicine_id 取得藥物名稱
-            medicine_id = bio.get("name")
-            if medicine_id:
-                cursor.execute("SELECT name FROM biological_medicines WHERE id = ?", (medicine_id,))
-                medicine_row = cursor.fetchone()
-                bio["display_name"] = medicine_row["name"] if medicine_row else medicine_id
-            history.append(bio)
-            bio = dict(biological_medicine_record.pop()) if biological_medicine_record else None
+            record = bio_stack.pop()
+            record["type"] = "biological"
+
+        # 用預載 mapping 取得藥物名稱（O(1)）
+        mid = record.get("name")
+        record["display_name"] = medicine_name_map.get(mid, str(mid) if mid else "")
+        history.append(record)
 
     # 取得額外藥物列表（用於勾選）
     cursor.execute("SELECT * FROM additional_medicines WHERE disable IS NULL OR disable = 0 ORDER BY id")
@@ -603,7 +617,6 @@ def all_medicine_record(patient_id):
 
     conn.close()
     return render_template("history.html", patient=patient, history=history, additional_medicines=additional_medicines)
-
 
 @app.route("/add_patient", methods=["GET", "POST"])
 def add_patient():
@@ -2276,6 +2289,28 @@ def get_file_type(filename):
     return 'other'
 
 
+def get_mime_type(filename, file_type):
+    """根據檔案類型與副檔名取得正確的 MIME 類型"""
+    IMAGE_MIME_MAP = {
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+        'svg': 'image/svg+xml',
+        'bmp': 'image/bmp',
+    }
+    
+    if file_type == 'pdf':
+        return 'application/pdf'
+    
+    if file_type == 'image':
+        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+        return IMAGE_MIME_MAP.get(ext, 'application/octet-stream')
+    
+    return 'application/octet-stream'
+
+
 @app.route("/management/documents")
 def management_documents():
     """文件管理頁面"""
@@ -2374,7 +2409,7 @@ def view_document(doc_id):
         return send_file(file_path, mimetype='application/pdf', as_attachment=False, download_name=original_name)
     elif file_type == 'image':
         # 圖片直接顯示
-        return send_file(file_path, mimetype=f'image/{file_type}')
+        return send_file(file_path, mimetype=get_mime_type(doc["stored_name"], file_type))
     else:
         # Word/Excel 需要下載（因為無法直接內嵌）
         return send_file(file_path, as_attachment=True, download_name=original_name)

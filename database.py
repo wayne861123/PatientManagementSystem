@@ -360,6 +360,19 @@ def log_db_action(cursor, action, table_name, record_id, old_data, new_data,
     return cursor.lastrowid
 
 
+def _escape_sql_value(value):
+    """跳脫 SQL 字串值（雙單引號 + 包裹）"""
+    if value is None:
+        return "NULL"
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    if isinstance(value, (int, float)):
+        return str(value)
+    # 字串：跳脫單引號與反斜線
+    escaped = str(value).replace("\\", "\\\\").replace("'", "''")
+    return f"'{escaped}'"
+
+
 def generate_reverse_sql(action, table_name, record_id, old_data, new_data):
     """根據操作類型產生反向 SQL
     
@@ -375,32 +388,25 @@ def generate_reverse_sql(action, table_name, record_id, old_data, new_data):
     """
     if action == "INSERT":
         # INSERT 的反向是 DELETE
-        return f"DELETE FROM {table_name} WHERE id = {record_id}"
+        return f"DELETE FROM {table_name} WHERE id = {int(record_id)}"
     
     elif action == "UPDATE":
         # UPDATE 的反向是用 old_data 覆蓋
         if old_data:
             sets = []
             for key, value in old_data.items():
-                if key != "id":  # 不更新 id
-                    val_str = f"'{value}'" if value is not None else "NULL"
-                    sets.append(f"{key} = {val_str}")
+                if key == "id":  # 不更新 id
+                    continue
+                sets.append(f"{key} = {_escape_sql_value(value)}")
             if sets:
-                return f"UPDATE {table_name} SET {', '.join(sets)} WHERE id = {record_id}"
+                return f"UPDATE {table_name} SET {', '.join(sets)} WHERE id = {int(record_id)}"
         return None
     
     elif action == "DELETE":
         # DELETE 的反向是重新 INSERT
         if new_data:
             columns = list(new_data.keys())
-            values = []
-            for value in new_data.values():
-                if value is None:
-                    values.append("NULL")
-                elif isinstance(value, (int, float)):
-                    values.append(str(value))
-                else:
-                    values.append(f"'{value}'")
+            values = [_escape_sql_value(v) for v in new_data.values()]
             return f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(values)})"
         return None
     
@@ -450,5 +456,3 @@ def get_audit_log_by_id(cursor, log_id):
     return cursor.fetchone()
 
 
-if __name__ == "__main__":
-    init_db()

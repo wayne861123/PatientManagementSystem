@@ -22,6 +22,56 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import get_connection, get_audit_logs, get_audit_log_by_id, logger
 
+# ===========================================================================
+# 安全白名單與驗證
+# ===========================================================================
+
+ALLOWED_REVERT_TABLES = {
+    "doctors", "diseases", "patients", "examinations",
+    "traditional_medicines", "biological_medicines", "additional_medicines",
+    "traditional_medicine_record", "biological_medicine_record",
+    "examination_record", "documents", "audit_log", "pasi_records"
+}
+
+
+def _validate_reverse_sql(sql):
+    """驗證 reverse_sql 只包含白名單操作，防止 SQL 注入攻擊
+    
+    Args:
+        sql: 待驗證的 SQL 語句
+        
+    Returns:
+        bool: 驗證是否通過
+        
+    Raises:
+        ValueError: 驗證失敗時拋出
+    """
+    import re
+    
+    if not sql:
+        raise ValueError("空的 SQL 語句")
+    
+    sql_stripped = sql.strip()
+    sql_upper = sql_stripped.upper()
+    
+    # 必須以允許的動詞開頭
+    allowed_prefixes = ("DELETE FROM", "UPDATE ", "INSERT INTO")
+    if not any(sql_upper.startswith(p) for p in allowed_prefixes):
+        raise ValueError(f"不允許的 SQL 操作: 只支援 DELETE/UPDATE/INSERT")
+    
+    # 確認目標表在白名單
+    m = re.match(r"(?:DELETE\s+FROM|UPDATE|INSERT\s+INTO)\s+`?(\w+)`?", sql_stripped, re.IGNORECASE)
+    if m:
+        table_name = m.group(1).lower()
+        if table_name not in ALLOWED_REVERT_TABLES:
+            raise ValueError(f"不允許的資料表: {table_name}")
+    
+    # UPDATE/DELETE 必須有 WHERE 條件，防止全表操作
+    if sql_upper.startswith(("DELETE FROM", "UPDATE ")) and " WHERE " not in sql_upper:
+        raise ValueError("缺少 WHERE 條件，可能造成全表操作")
+    
+    return True
+
 # 顏色定義
 class Colors:
     HEADER = '\033[95m'
@@ -162,6 +212,13 @@ def cmd_revert(args):
         print(color_text("【執行模式】正在執行復原...", Colors.YELLOW))
         print()
         
+        # 執行前驗證 SQL 安全性
+        try:
+            _validate_reverse_sql(reverse_sql)
+        except ValueError as ve:
+            print(color_text(f"復原 SQL 驗證失敗: {ve}", Colors.RED))
+            sys.exit(1)
+        
         # 確認
         confirm = input("確定要執行此操作？輸入 YES 確認: ")
         if confirm != "YES":
@@ -261,6 +318,13 @@ def cmd_interactive(args):
                             print(color_text("反向 SQL：", Colors.CYAN))
                             print(log['reverse_sql'])
                             print()
+                            
+                            # 執行前驗證 SQL 安全性
+                            try:
+                                _validate_reverse_sql(log['reverse_sql'])
+                            except ValueError as ve:
+                                print(color_text(f"復原 SQL 驗證失敗: {ve}", Colors.RED))
+                                continue
                             
                             confirm = input("要執行此 SQL 嗎？輸入 YES 執行: ")
                             if confirm == "YES":

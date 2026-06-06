@@ -338,11 +338,15 @@ function deleteHistory(id, type) {
         body: formData
     }).then(response => response.json()).then(data => {
         if (data.success === false) {
-            return false;
+            alert(data.message || "刪除失敗");
+            return;
         }
+        alert("刪除成功!");
+        location.reload();
+    }).catch(error => {
+        console.error("Error", error);
+        alert("刪除失敗，請稍後再試");
     });
-    alert("更新成功!");
-    location.reload();
 }
 
 /**
