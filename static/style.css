@@ -1346,7 +1346,7 @@ select {
 
 /* 篩選區域容器 */
 .filter-section {
-    width: 100%;
+    width: 1000px;
     background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
     border-radius: 15px;
     padding: 20px;
@@ -1409,9 +1409,9 @@ select {
 
 .search-btn {
     position: absolute;
-    right: 8px;
-    bottom: 8px;
-    width: 36px;
+    right: 0.3rem;
+    top: 33px;
+    width: 50px;
     height: 36px;
     background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
     border: none;
