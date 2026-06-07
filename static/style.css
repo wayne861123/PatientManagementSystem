@@ -1098,10 +1098,12 @@ select {
 
 /* 首頁雙欄佈局 */
 .home-layout {
+    height: calc(100vh - 140px);
     display: grid;
     grid-template-columns: 4fr 6fr;
     gap: 5px;
     width: 100%;
+    min-height: 0;
 }
 
 /* 提醒區塊容器 */
@@ -1111,6 +1113,10 @@ select {
     padding: 20px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
     border: 2px solid rgba(212, 175, 55, 0.3);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* 提醒標題 */
@@ -1127,7 +1133,8 @@ select {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    max-height: 500px;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding-right: 8px;
 }
@@ -1574,6 +1581,10 @@ select {
     padding: 20px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
     border: 2px solid rgba(212, 175, 55, 0.3);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* 待辦事項標題 */
@@ -1638,7 +1649,8 @@ select {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: 400px;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding-right: 8px;
 }
