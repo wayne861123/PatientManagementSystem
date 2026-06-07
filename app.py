@@ -152,8 +152,12 @@ def home():
     # 按緊急程度排序（紅燈優先）
     reminders.sort(key=lambda x: (0 if x['urgent_level'] == 'red' else 1))
     
+    # 取得待辦事項
+    cursor.execute("SELECT * FROM todos ORDER BY is_done ASC, id DESC")
+    todos = cursor.fetchall()
+    
     conn.close()
-    return render_template("home.html", doctors=doctors, reminders=reminders)
+    return render_template("home.html", doctors=doctors, reminders=reminders, todos=todos)
 
 
 @app.route("/management/doctors")
@@ -939,6 +943,136 @@ def api_add_additional_medicines():
     conn.close()
 
     logger.info(f"新增額外藥物: id={record_id}, name={name}")
+    return {"success": True}
+
+
+# ===========================================================================
+# API 路由 - 待辦事項
+# ===========================================================================
+
+@app.route("/api/add/todo", methods=["POST"])
+def api_add_todo():
+    """新增待辦事項 API"""
+    data = request.get_json()
+    content = data.get("content")
+
+    # 必填欄位驗證
+    if not content or not content.strip():
+        return {"success": False, "message": "請輸入待辦內容"}, 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("INSERT INTO todos (content, is_done) VALUES (?, ?)", (content.strip(), 0))
+    record_id = cursor.lastrowid
+    conn.commit()
+
+    # 記錄審計日誌
+    log_db_action(
+        cursor,
+        action="INSERT",
+        table_name="todos",
+        record_id=record_id,
+        old_data=None,
+        new_data={"id": record_id, "content": content.strip(), "is_done": 0},
+        sql_statement=f"INSERT INTO todos (content, is_done) VALUES ('{content.strip()}', 0)",
+        operator="api",
+        ip_address=flask_request.remote_addr
+    )
+    conn.commit()
+    conn.close()
+
+    logger.info(f"新增待辦事項: id={record_id}, content={content}")
+    return {"success": True, "id": record_id}
+
+
+@app.route("/api/update/todo/<int:todo_id>", methods=["POST"])
+def api_update_todo(todo_id):
+    """更新待辦事項 API"""
+    data = request.get_json()
+    content = data.get("content")
+    is_done = data.get("is_done")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 取得舊資料
+    cursor.execute("SELECT * FROM todos WHERE id = ?", (todo_id,))
+    old_data_row = cursor.fetchone()
+    if old_data_row is None:
+        conn.close()
+        return {"success": False, "message": "找不到待辦事項"}, 404
+    old_data = dict(old_data_row)
+
+    new_data = dict(old_data)
+
+    # 更新內容
+    if content is not None and content.strip():
+        cursor.execute("UPDATE todos SET content = ? WHERE id = ?", (content.strip(), todo_id))
+        new_data["content"] = content.strip()
+
+    # 更新完成狀態
+    if is_done is not None:
+        cursor.execute("UPDATE todos SET is_done = ? WHERE id = ?", (1 if is_done else 0, todo_id))
+        new_data["is_done"] = 1 if is_done else 0
+
+    conn.commit()
+
+    # 記錄審計日誌
+    log_db_action(
+        cursor,
+        action="UPDATE",
+        table_name="todos",
+        record_id=todo_id,
+        old_data=old_data,
+        new_data=new_data,
+        sql_statement=f"UPDATE todos WHERE id = {todo_id}",
+        operator="api",
+        ip_address=flask_request.remote_addr
+    )
+    conn.commit()
+    conn.close()
+
+    logger.info(f"更新待辦事項: id={todo_id}, content={new_data['content']}, is_done={new_data['is_done']}")
+    return {"success": True}
+
+
+@app.route("/api/delete/todo/<int:todo_id>", methods=["DELETE"])
+def api_delete_todo(todo_id):
+    """刪除待辦事項 API"""
+    data = request.get_json()
+    id_ = data.get("id")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 取得舊資料
+    cursor.execute("SELECT * FROM todos WHERE id = ?", (todo_id,))
+    old_data_row = cursor.fetchone()
+    if old_data_row is None:
+        conn.close()
+        return {"success": False, "message": "找不到待辦事項"}, 404
+    old_data = dict(old_data_row)
+
+    cursor.execute("DELETE FROM todos WHERE id = ?", (todo_id,))
+    conn.commit()
+
+    # 記錄審計日誌
+    log_db_action(
+        cursor,
+        action="DELETE",
+        table_name="todos",
+        record_id=todo_id,
+        old_data=old_data,
+        new_data=None,
+        sql_statement=f"DELETE FROM todos WHERE id = {todo_id}",
+        operator="api",
+        ip_address=flask_request.remote_addr
+    )
+    conn.commit()
+    conn.close()
+
+    logger.info(f"刪除待辦事項: id={todo_id}")
     return {"success": True}
 
 

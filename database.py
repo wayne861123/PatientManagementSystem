@@ -165,6 +165,12 @@ TABLES = {
         "name": "TEXT",
         "disable": "INTEGER"
     },
+    "todos": {
+        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "content": "TEXT",
+        "is_done": "INTEGER DEFAULT 0",
+        "created_at": "TEXT DEFAULT (datetime('now', 'localtime'))"
+    },
     "documents": {
         "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
         "original_name": "TEXT",

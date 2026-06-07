@@ -615,3 +615,111 @@ function filterPatientsInstant() {
         noPatientsMsg.style.display = visibleCount === 0 ? "flex" : "none";
     }
 }
+
+/* --------------------------------------------------------------------------
+   10. Todo Section - 待辦事項功能
+   -------------------------------------------------------------------------- */
+
+/**
+ * 新增待辦事項
+ */
+function addTodo() {
+    const input = document.getElementById("todo-input");
+    const content = input ? input.value.trim() : "";
+
+    if (!content) {
+        alert("請輸入待辦內容");
+        return;
+    }
+
+    fetch("/api/add/todo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content })
+    }).then(response => response.json()).then(data => {
+        if (data.success) {
+            if (input) input.value = "";
+            location.reload();
+        } else {
+            alert(data.message || "新增失敗");
+        }
+    }).catch(error => {
+        console.error("Error:", error);
+        alert("新增失敗，請稍後再試");
+    });
+}
+
+/**
+ * 切換待辦事項完成狀態
+ * @param {number} todoId - 待辦事項 ID
+ * @param {boolean} isChecked - 是否已完成
+ */
+function toggleTodo(todoId, isChecked) {
+    fetch(`/api/update/todo/${todoId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_done: isChecked })
+    }).then(response => response.json()).then(data => {
+        if (data.success) {
+            const todoItem = document.getElementById(`todo-${todoId}`);
+            if (todoItem) {
+                if (isChecked) {
+                    todoItem.classList.add("done");
+                } else {
+                    todoItem.classList.remove("done");
+                }
+            }
+        } else {
+            alert(data.message || "更新失敗");
+            const checkbox = document.querySelector(`#todo-${todoId} .todo-checkbox`);
+            if (checkbox) checkbox.checked = !isChecked;
+        }
+    }).catch(error => {
+        console.error("Error:", error);
+        alert("更新失敗，請稍後再試");
+        const checkbox = document.querySelector(`#todo-${todoId} .todo-checkbox`);
+        if (checkbox) checkbox.checked = !isChecked;
+    });
+}
+
+/**
+ * 刪除待辦事項
+ * @param {number} todoId - 待辦事項 ID
+ */
+function deleteTodo(todoId) {
+    if (!confirm("確定要刪除此待辦事項？")) {
+        return;
+    }
+
+    fetch(`/api/delete/todo/${todoId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: todoId })
+    }).then(response => response.json()).then(data => {
+        if (data.success) {
+            const todoItem = document.getElementById(`todo-${todoId}`);
+            if (todoItem) {
+                todoItem.style.transition = "opacity 0.3s, transform 0.3s";
+                todoItem.style.opacity = "0";
+                todoItem.style.transform = "translateX(20px)";
+                setTimeout(() => {
+                    todoItem.remove();
+                    const todoList = document.getElementById("todo-list");
+                    if (todoList && todoList.querySelectorAll(".todo-item").length === 0) {
+                        todoList.innerHTML = `
+                            <div class="todo-empty">
+                                <span class="todo-empty-icon">✓</span>
+                                <span class="todo-empty-text">目前沒有待辦事項</span>
+                            </div>
+                        `;
+                    }
+                }, 300);
+            }
+        } else {
+            alert(data.message || "刪除失敗");
+        }
+    }).catch(error => {
+        console.error("Error:", error);
+        alert("刪除失敗，請稍後再試");
+    });
+}

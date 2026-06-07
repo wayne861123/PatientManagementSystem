@@ -1096,10 +1096,16 @@ select {
    11. Reminder Section - 提醒區塊
    -------------------------------------------------------------------------- */
 
+/* 首頁雙欄佈局 */
+.home-layout {
+    display: grid;
+    grid-template-columns: 4fr 6fr;
+    gap: 5px;
+    width: 100%;
+}
+
 /* 提醒區塊容器 */
 .reminder-section {
-    width: 1000px;
-    margin-bottom: 30px;
     background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
     border-radius: 15px;
     padding: 20px;
@@ -1121,6 +1127,9 @@ select {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 8px;
 }
 
 /* 提醒項目 */
@@ -1551,5 +1560,168 @@ select {
 }
 
 .no-data-text {
+    font-size: 1.1rem;
+}
+
+/* --------------------------------------------------------------------------
+   13. Todo Section - 待辦事項區塊
+   -------------------------------------------------------------------------- */
+
+/* 待辦事項區塊容器 */
+.todo-section {
+    background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+}
+
+/* 待辦事項標題 */
+.todo-title {
+    font-size: 1.5rem;
+    color: #2C2C2C;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #D4AF37;
+}
+
+/* 待辦事項輸入列 */
+.todo-input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* 待辦事項輸入框 */
+.todo-input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.todo-input:focus {
+    outline: none;
+    border-color: #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+.todo-input::placeholder {
+    color: #999;
+}
+
+/* 待辦事項新增按鈕 */
+.todo-add-btn {
+    padding: 10px 25px;
+    background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+.todo-add-btn:hover {
+    background: linear-gradient(135deg, #FFD700 0%, #D4AF37 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5);
+}
+
+/* 待辦事項列表 */
+.todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+/* 待辦事項項目 */
+.todo-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    transition: all 0.3s ease;
+}
+
+.todo-item:hover {
+    border-color: #D4AF37;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
+}
+
+/* 已完成項目 */
+.todo-item.done {
+    background: rgba(212, 175, 55, 0.05);
+    border-color: rgba(212, 175, 55, 0.1);
+}
+
+.todo-item.done .todo-content {
+    text-decoration: line-through;
+    color: #999;
+}
+
+/* 待辦事項 Checkbox */
+.todo-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: #D4AF37;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-right: 12px;
+}
+
+/* 待辦事項內容 */
+.todo-content {
+    flex: 1;
+    font-size: 1rem;
+    color: #2C2C2C;
+    word-break: break-all;
+}
+
+/* 待辦事項刪除按鈕 */
+.todo-delete-btn {
+    background: transparent;
+    border: none;
+    color: #ccc;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+
+.todo-delete-btn:hover {
+    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+}
+
+/* 待辦事項空狀態 */
+.todo-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: #888;
+}
+
+.todo-empty-icon {
+    font-size: 2rem;
+    margin-right: 10px;
+    color: #27ae60;
+}
+
+.todo-empty-text {
     font-size: 1.1rem;
 }

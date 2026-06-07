@@ -1,17 +1,30 @@
 {% extends 'base.html' %}
-{% block header %}醫師列表{% endblock %}
+{% block header %}待辦事項{% endblock %}
 {% block container %}
-    <div class="grid">
-        {% for doctor in doctors %}
-        {% if doctor.disable == 1 %}
-        {% continue %}
-        {% endif %}
-        <a href="/doctor/{{ doctor.id }}">
-            <div class="card">
-                <h2>{{ doctor.name }}</h2>
-            </div>
-        </a>
-        {% endfor %}
+    <div class="home-layout">
+    <!-- 待辦事項區塊 -->
+    <div class="todo-section">
+        <h2 class="todo-title">📝 待辦事項</h2>
+        <div class="todo-input-row">
+            <input type="text" id="todo-input" class="todo-input" placeholder="輸入待辦事項..." onkeypress="if(event.key==='Enter')addTodo()">
+            <button class="todo-add-btn" onclick="addTodo()">新增</button>
+        </div>
+        <div class="todo-list" id="todo-list">
+            {% if todos %}
+                {% for todo in todos %}
+                <div class="todo-item {{ 'done' if todo.is_done == 1 else '' }}" id="todo-{{ todo.id }}">
+                    <input type="checkbox" class="todo-checkbox" {{ 'checked' if todo.is_done == 1 else '' }} onclick="toggleTodo({{ todo.id }}, this.checked)">
+                    <span class="todo-content">{{ todo.content }}</span>
+                    <button class="todo-delete-btn" onclick="deleteTodo({{ todo.id }})">✕</button>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="todo-empty">
+                    <span class="todo-empty-icon">✓</span>
+                    <span class="todo-empty-text">目前沒有待辦事項</span>
+                </div>
+            {% endif %}
+        </div>
     </div>
     
     <!-- 提醒區塊 -->
@@ -65,5 +78,6 @@
                 </div>
             {% endif %}
         </div>
+    </div>
     </div>
 {% endblock %}
