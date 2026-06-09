@@ -30,6 +30,8 @@
         </div>
         <div class="filter-results">
             <span class="result-count">共 {{ patients|length }} 位病患</span>
+            <a href="{{ url_for('add_patient', doctor_id=selected_doctor_id, disease_id=selected_disease_id) }}"
+               class="add-btn filter-add-btn">+ 新增病患</a>
         </div>
     </div>
 

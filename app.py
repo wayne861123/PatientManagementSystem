@@ -694,18 +694,10 @@ def add_patient():
             ip_address=flask_request.remote_addr
         )
         conn.commit()
+        conn.close()
 
-        # 取得醫師、疾病與病患列表
-        cursor.execute("SELECT * FROM doctors WHERE id = ?", (doctor_id,))
-        doctor = cursor.fetchone()
-
-        cursor.execute("SELECT * FROM diseases WHERE id = ?", (disease_id,))
-        disease = cursor.fetchone()
-
-        cursor.execute("SELECT * FROM patients WHERE doctor_id = ? AND disease_id = ? ORDER BY id", (doctor_id, disease_id))
-        patients = cursor.fetchall()
-
-        return render_template("doctor_disease_patients.html", doctor=doctor, disease=disease, patients=patients)
+        # 新增成功後導向所有病患列表（保留篩選條件）
+        return redirect(url_for("all_patients", doctor_id=doctor_id, disease_id=disease_id))
 
     conn.close()
     return render_template("add_patient.html",
