@@ -517,12 +517,14 @@ async function apiSubmit(url, options = {}) {
 function applyFilter() {
     const doctorFilter = document.getElementById("doctor-filter");
     const diseaseFilter = document.getElementById("disease-filter");
+    const statusFilter = document.getElementById("status-filter");
     const searchInput = document.getElementById("search-input");
-    
+
     const doctorId = doctorFilter ? doctorFilter.value : "";
     const diseaseId = diseaseFilter ? diseaseFilter.value : "";
+    const statusValue = statusFilter ? statusFilter.value : "";
     const searchKeyword = searchInput ? searchInput.value.trim() : "";
-    
+
     // 建立 URL 參數
     const params = new URLSearchParams();
     if (doctorId) {
@@ -530,6 +532,9 @@ function applyFilter() {
     }
     if (diseaseId) {
         params.set("disease_id", diseaseId);
+    }
+    if (statusValue) {
+        params.set("status", statusValue);
     }
     if (searchKeyword) {
         params.set("search", searchKeyword);

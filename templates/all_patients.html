@@ -22,6 +22,16 @@
                     {% endfor %}
                 </select>
             </div>
+            <div class="filter-item">
+                <label for="status-filter">狀態</label>
+                <select id="status-filter" onchange="applyFilter()">
+                    <option value="" {% if not selected_status %}selected{% endif %}>全部</option>
+                    <option value="評估中" {% if selected_status == "評估中" %}selected{% endif %}>評估中</option>
+                    <option value="用藥中" {% if selected_status == "用藥中" %}selected{% endif %}>用藥中</option>
+                    <option value="下車" {% if selected_status == "下車" %}selected{% endif %}>下車</option>
+                    <option value="隱藏" {% if selected_status == "隱藏" %}selected{% endif %}>隱藏</option>
+                </select>
+            </div>
             <div class="filter-item search-item">
                 <label for="search-input">關鍵字搜尋</label>
                 <input type="text" id="search-input" placeholder="搜尋姓名、病歷號..." value="{{ search_keyword }}" onkeyup="handleSearchKeyup(event)">
@@ -40,7 +50,13 @@
         {% for patient in patients %}
         <a href="{{ url_for('patient_detail', patient_id=patient.id) }}" class="patient-link">
             <div class="patient-card" data-doctor="{{ patient.doctor_id }}" data-disease="{{ patient.disease_id }}" data-name="{{ patient.name }}" data-mrn="{{ patient.medical_record_number }}" data-idnum="{{ patient.id_number }}">
-                <h3>{{ patient.name }}</h3>
+                <h3>{{ patient.name }}
+                    {% if patient.status == "隱藏" %}<span class="status-badge status-hidden" style="background:#555;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75em;margin-left:6px;">隱藏</span>
+                    {% elif patient.status == "下車" %}<span class="status-badge status-discharged" style="background:#999;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75em;margin-left:6px;">下車</span>
+                    {% elif patient.status == "用藥中" %}<span class="status-badge status-active" style="background:#28a745;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75em;margin-left:6px;">用藥中</span>
+                    {% elif patient.status == "評估中" %}<span class="status-badge status-assessment" style="background:#ffc107;color:#333;padding:2px 8px;border-radius:4px;font-size:0.75em;margin-left:6px;">評估中</span>
+                    {% endif %}
+                </h3>
                 <p><strong>病歷號：</strong>{{ patient.medical_record_number or '-' }}</p>
                 <p><strong>生日：</strong>{{ patient.birthday or '-' }}</p>
             </div>

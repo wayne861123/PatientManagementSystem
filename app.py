@@ -94,7 +94,7 @@ def home():
         """, (patient_id,))
         patient_info = cursor.fetchone()
         if patient_info:
-            if patient_info["status"] == "下車":
+            if patient_info["status"] in ("下車", "隱藏"):
                 continue
             patient_reminders[patient_id] = {
                 'patient_id': patient_id,
@@ -232,42 +232,52 @@ def all_patients():
     doctor_id = request.args.get("doctor_id", type=int)
     disease_id = request.args.get("disease_id", type=int)
     search_keyword = request.args.get("search", "").strip()
-    
+    status_filter = request.args.get("status", "").strip()
+
     # 建構查詢
+    # 預設顯示所有狀態，使用者可以透過 status 篩選器選擇特定狀態
     query = """
         SELECT p.*, d.name as doctor_name, dis.name as disease_name
         FROM patients p
         LEFT JOIN doctors d ON p.doctor_id = d.id
         LEFT JOIN diseases dis ON p.disease_id = dis.id
-        WHERE (p.status IS NULL OR p.status IN ('評估中', '用藥中', '下車'))
+        WHERE 1=1
     """
     params = []
-    
+
+    if status_filter:
+        # 篩選特定狀態值（包含 NULL/空字串的患者用「未選擇」選項，這裡只用 IN 篩選明確狀態）
+        query += " AND p.status = ?"
+        params.append(status_filter)
+    # else: 顯示全部狀態
+
     if doctor_id:
         query += " AND p.doctor_id = ?"
         params.append(doctor_id)
-    
+
     if disease_id:
         query += " AND p.disease_id = ?"
         params.append(disease_id)
-    
+
     if search_keyword:
         query += " AND (p.name LIKE ? OR p.medical_record_number LIKE ? OR p.id_number LIKE ?)"
         search_pattern = f"%{search_keyword}%"
         params.extend([search_pattern, search_pattern, search_pattern])
-    
-    query += " ORDER BY p.id DESC"
-    
+
+    # 隱藏狀態的病患排到最後，其餘依 id DESC（最新在前）
+    query += " ORDER BY CASE WHEN p.status = '隱藏' THEN 1 ELSE 0 END, p.id DESC"
+
     cursor.execute(query, params)
     patients = cursor.fetchall()
-    
+
     conn.close()
-    return render_template("all_patients.html", 
-                           doctors=doctors, 
+    return render_template("all_patients.html",
+                           doctors=doctors,
                            diseases=diseases,
                            patients=patients,
                            selected_doctor_id=doctor_id,
                            selected_disease_id=disease_id,
+                           selected_status=status_filter,
                            search_keyword=search_keyword)
 
 
@@ -1095,6 +1105,13 @@ def api_add_medicine_record():
         conn.close()
         return {"success": False, "message": "病人不存在"}
 
+    # 檢查病患是否為隱藏狀態（隱藏病患不允許新增用藥記錄）
+    cursor.execute("SELECT status FROM patients WHERE id = ?", (patient_id,))
+    status_row = cursor.fetchone()
+    if status_row and status_row["status"] == "隱藏":
+        conn.close()
+        return {"success": False, "message": "此病患已隱藏，無法新增用藥記錄"}, 403
+
     # 檢查是否有現有記錄，否則建立新的 record_id
     cursor.execute("SELECT record_id FROM traditional_medicine_record WHERE patient_id = ? ORDER BY id DESC", (patient_id,))
     last_traditional_record = cursor.fetchone()
@@ -1195,6 +1212,13 @@ def api_add_followup_record():
     conn = get_connection()
     cursor = conn.cursor()
 
+    # 檢查病患是否為隱藏狀態（隱藏病患不允許新增回診記錄）
+    cursor.execute("SELECT status FROM patients WHERE id = ?", (patient_id,))
+    status_row = cursor.fetchone()
+    if status_row and status_row["status"] == "隱藏":
+        conn.close()
+        return {"success": False, "message": "此病患已隱藏，無法新增回診記錄"}, 403
+
     table_name = ""
     new_data = {}
     # 安全轉換 remain_dose 為整數
@@ -1260,6 +1284,14 @@ def api_add_exam_record():
 
     conn = get_connection()
     cursor = conn.cursor()
+
+    # 檢查病患是否為隱藏狀態（隱藏病患不允許新增檢查記錄）
+    cursor.execute("SELECT status FROM patients WHERE id = ?", (patient_id,))
+    status_row = cursor.fetchone()
+    if status_row and status_row["status"] == "隱藏":
+        conn.close()
+        return {"success": False, "message": "此病患已隱藏，無法新增檢查記錄"}, 403
+
     cursor.execute("""
         INSERT INTO examination_record (patient_id, name, check_date, result, remark)
         VALUES (?, ?, ?, ?, ?)
@@ -1512,6 +1544,13 @@ def api_update_followup_record():
 
     conn = get_connection()
     cursor = conn.cursor()
+
+    # 檢查病患是否為隱藏狀態（隱藏病患不允許編輯用藥記錄）
+    cursor.execute("SELECT status FROM patients WHERE id = ?", (patient_id,))
+    status_row = cursor.fetchone()
+    if status_row and status_row["status"] == "隱藏":
+        conn.close()
+        return {"success": False, "message": "此病患已隱藏，無法編輯用藥記錄"}, 403
 
     table_name = "biological_medicine_record" if medicine_type == "biological" else "traditional_medicine_record"
 

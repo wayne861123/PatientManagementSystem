@@ -4,6 +4,9 @@
 <div class="center">
     <div class="detail-card w-1000">
         <a href="javascript:void(0)" class="general-btn delete-btn" onclick="deletePatient()">刪除病患</a>
+        {% if patient.status == "隱藏" %}
+        <span class="status-badge" style="background:#555;color:#fff;padding:6px 12px;border-radius:6px;font-size:0.95em;margin-left:8px;">此病患已隱藏，無法新增用藥、回診、檢查記錄</span>
+        {% endif %}
         <!-- 基本資料 -->
         <form method="POST" id="info-form">
             <input name="patient_id"  type="hidden" value="{{ patient.id }}" disabled>
@@ -44,6 +47,7 @@
                             <option value="評估中">評估中</option>
                             <option value="用藥中">用藥中</option>
                             <option value="下車">下車</option>
+                            <option value="隱藏">隱藏</option>
                         </select>
                     </div>
                     <div class="info-item full-width">
@@ -104,7 +108,7 @@
                 <h3 class="inline">療程用藥</h3>
                 <a href="{{ url_for('all_medicine_record', patient_id=patient.id) }}" class="general-btn btn-margin">歷史紀錄</a>
             </div>
-            <div id="medicine-button-menu">
+            <div id="medicine-button-menu" {% if patient.status == "隱藏" %}class="hidden"{% endif %}>
                 <a href="javascript:void(0)" class="general-btn btn-margin" onclick="toggleAddMedicine()">新增用藥</a>
                 <a href="javascript:void(0)" class="general-btn btn-margin" onclick="toggleAddFollowupRecord()">回診</a>
             </div>
@@ -217,9 +221,14 @@
                                             <textarea class="info-textarea followup-input" name="remark" disabled>{{ record.remark if record.remark else '' }}</textarea>
                                         </div>
                                         <div>
+                                            {% if patient.status != "隱藏" %}
                                             <a class="general-btn edit-followup-btn" href="javascript:void(0);" onclick="editFollowupRecord('{{ record.id }}')">編輯</a>
+                                            {% endif %}
                                             <a class="general-btn save-followup-btn hidden" href="javascript:void(0);" onclick="saveFollowupRecord('{{ record.id }}')">保存</a>
                                             <a class="general-btn cancel-followup-btn hidden" href="javascript:void(0);" onclick="cancelFollowupRecord('{{ record.id }}')">取消</a>
+                                            {% if patient.status == "隱藏" %}
+                                            <span class="status-badge" style="background:#555;color:#fff;padding:4px 10px;border-radius:4px;font-size:0.85em;">此病患已隱藏，無法編輯用藥記錄</span>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </form>
@@ -325,9 +334,14 @@
                             </div>
                             <div><label>備註</label><textarea name="exam-remark" class="info-textarea h-100" disabled>{{ examination_record_dict.get(exam.name)[0]['remark'] if examination_record_dict.get(exam.name) else '' }}</textarea></div>
                             <div>
+                                {% if patient.status != "隱藏" %}
                                 <a id="exam-checkbutton-{{ exam.id }}" class="general-btn" href="javascript:void(0);" onclick="checkButton('{{ exam.id }}')">新增紀錄</a>
+                                {% endif %}
                                 <a id="exam-savebutton-{{ exam.id }}" class="general-btn hidden" href="javascript:void(0);" onclick="saveButton('{{ exam.id }}')">保存</a>
                                 <a id="exam-cancelbutton-{{ exam.id }}" class="general-btn hidden" href="javascript:void(0);" onclick="cancelButton('{{ exam.id }}')">取消</a>
+                                {% if patient.status == "隱藏" %}
+                                <span class="status-badge" style="background:#555;color:#fff;padding:4px 10px;border-radius:4px;font-size:0.85em;">此病患已隱藏，無法新增記錄</span>
+                                {% endif %}
                             </div>
                         </div>
                         <input type="hidden" name="patient-id" value="{{ patient.id }}" required>
@@ -731,6 +745,8 @@
         document.getElementById("info-status").value = "用藥中";
     {% elif patient.status == "下車" %}
         document.getElementById("info-status").value = "下車";
+    {% elif patient.status == "隱藏" %}
+        document.getElementById("info-status").value = "隱藏";
     {% endif %}
     {% if patient.city %}
         document.getElementById("city").value = "{{ patient.city }}";
