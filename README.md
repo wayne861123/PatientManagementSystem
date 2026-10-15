@@ -55,15 +55,40 @@ A Flask-based patient management system for tracking patient information, medica
 
 ## Setup
 
-```bash
-# Install dependencies
-pip install flask
+本專案使用 Python 3.11 + [uv](https://github.com/astral-sh/uv) 管理環境與依賴。
 
-# Initialize database (automatic on first run)
+### 前置需求
+
+- Python 3.11+
+- [uv](https://github.com/astral-sh/uv)（建議安裝：`pip install uv` 或 `curl -LsSf https://astral.sh/uv/install.sh | sh`）
+
+### 環境建置
+
+```bash
+# 1. 建立虛擬環境（Python 3.11）
+uv venv --python 3.11
+
+# 2. 啟動虛擬環境（Windows PowerShell）
+.venv\Scripts\activate.ps1
+# 或 CMD：
+# .venv\Scripts\activate.bat
+
+# 3. 安裝依賴（會自動解析並鎖定版本到 uv.lock）
+uv sync
+
+# 4. 初始化資料庫（首次執行時自動建立）
 python app.py
 
-# Access the application
-# Open browser: http://localhost:5000
+# 5. 開啟瀏覽器
+# http://localhost:5000
+```
+
+### 更新依賴
+
+```bash
+# 新增或更新 dependencies 後，重新 lock 並安裝
+uv lock
+uv sync
 ```
 
 ## CLI Tools

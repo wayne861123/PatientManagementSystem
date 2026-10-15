@@ -1,0 +1,15 @@
+[project]
+name = "patient-management-system"
+version = "1.0.0"
+description = "醫師門診管理系統 - Flask 病患管理系統"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=2.0.0",
+]
+
+[project.scripts]
+app = "app:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

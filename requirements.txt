@@ -1,1 +1,2 @@
-Flask>=2.0.0
+# 請使用 uv 與 pyproject.toml 管理依賴
+# 參考 README.md 的 Setup 說明
