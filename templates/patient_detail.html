@@ -102,6 +102,98 @@
                 </div>
             </div>
         </form>
+
+        <!-- 聯絡人 -->
+        <div class="info-section" id="contact-section">
+            <div>
+                <h3 class="inline-block">聯絡人</h3>
+                <div id="contact-add-button" class="inline-block">
+                    <a href="javascript:void(0)" class="general-btn btn-margin" onclick="toggleAddContact()">＋ 新增聯絡人</a>
+                </div>
+            </div>
+            {% if patient.status != "隱藏" %}
+            <div id="add-contact-form" class="hidden contact-input-area">
+                <form id="add-contact-form-inner">
+                    <input type="hidden" name="patient_id" value="{{ patient.id }}">
+                    <div class="contact-input-row">
+                        <div class="contact-input-group">
+                            <label>關係</label>
+                            <select name="relationship" required>
+                                <option value="">請選擇</option>
+                                <option value="父母">父母</option>
+                                <option value="配偶">配偶</option>
+                                <option value="子女">子女</option>
+                                <option value="親戚">親戚</option>
+                                <option value="朋友">朋友</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                        <div class="contact-input-group">
+                            <label>姓名</label>
+                            <input type="text" name="name" placeholder="聯絡人姓名" required>
+                        </div>
+                        <div class="contact-input-group">
+                            <label>電話</label>
+                            <input type="text" name="phone" placeholder="聯絡電話">
+                        </div>
+                    </div>
+                    <div class="btn-group mt-10">
+                        <a href="javascript:void(0)" class="general-btn" onclick="saveNewContact()">儲存</a>
+                        <a href="javascript:void(0)" class="general-btn" onclick="toggleAddContact()">取消</a>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+            <div class="contact-list">
+                {% if contacts %}
+                    {% for contact in contacts %}
+                    <div class="contact-item" id="contact-row-{{ contact.id }}">
+                        <div class="contact-view" id="contact-view-{{ contact.id }}">
+                            <div class="contact-field"><label>關係</label><span>{{ contact.relationship }}</span></div>
+                            <div class="contact-field"><label>姓名</label><span>{{ contact.name }}</span></div>
+                            <div class="contact-field"><label>電話</label><span>{{ contact.phone if contact.phone else '-' }}</span></div>
+                            <div class="contact-actions">
+                                <a href="javascript:void(0)" class="general-btn btn-small" onclick="editContact({{ contact.id }})">編輯</a>
+                                <a href="javascript:void(0)" class="general-btn btn-small" onclick="deleteContact({{ contact.id }})">刪除</a>
+                            </div>
+                        </div>
+                        <form id="contact-form-{{ contact.id }}" class="contact-edit hidden">
+                            <input type="hidden" name="id" value="{{ contact.id }}">
+                            <div class="contact-input-row">
+                                <div class="contact-input-group">
+                                    <label>關係</label>
+                                    <select name="relationship" required>
+                                        <option value="">請選擇</option>
+                                        <option value="父母" {% if contact.relationship == '父母' %}selected{% endif %}>父母</option>
+                                        <option value="配偶" {% if contact.relationship == '配偶' %}selected{% endif %}>配偶</option>
+                                        <option value="子女" {% if contact.relationship == '子女' %}selected{% endif %}>子女</option>
+                                        <option value="親戚" {% if contact.relationship == '親戚' %}selected{% endif %}>親戚</option>
+                                        <option value="朋友" {% if contact.relationship == '朋友' %}selected{% endif %}>朋友</option>
+                                        <option value="其他" {% if contact.relationship == '其他' %}selected{% endif %}>其他</option>
+                                    </select>
+                                </div>
+                                <div class="contact-input-group">
+                                    <label>姓名</label>
+                                    <input type="text" name="name" value="{{ contact.name }}" required>
+                                </div>
+                                <div class="contact-input-group">
+                                    <label>電話</label>
+                                    <input type="text" name="phone" value="{{ contact.phone }}">
+                                </div>
+                            </div>
+                            <div class="btn-group mt-10">
+                                <a href="javascript:void(0)" class="general-btn" onclick="saveContact({{ contact.id }})">儲存</a>
+                                <a href="javascript:void(0)" class="general-btn" onclick="cancelEditContact({{ contact.id }})">取消</a>
+                            </div>
+                        </form>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="contact-empty">目前沒有聯絡人資料</div>
+                {% endif %}
+            </div>
+        </div>
+
         <!-- 用藥紀錄 -->
         <div class="info-section" id="medicine-record-section">
             <div >
@@ -802,6 +894,130 @@
             }
         });
         hiddenInput.value = selectedMedicines.join(',');
+    }
+
+    // =========================================================================
+    // 聯絡人功能
+    // =========================================================================
+
+    function toggleAddContact() {
+        const form = document.getElementById("add-contact-form");
+        const addBtn = document.getElementById("contact-add-button");
+        if (form.classList.contains("hidden")) {
+            form.classList.remove("hidden");
+            addBtn.classList.add("hidden");
+        } else {
+            form.classList.add("hidden");
+            addBtn.classList.remove("hidden");
+            // 重置表單
+            const innerForm = document.getElementById("add-contact-form-inner");
+            if (innerForm) innerForm.reset();
+        }
+    }
+
+    function saveNewContact() {
+        const innerForm = document.getElementById("add-contact-form-inner");
+        if (!innerForm.checkValidity()) {
+            innerForm.reportValidity();
+            return;
+        }
+        const formData = new FormData(innerForm);
+
+        fetch("{{ url_for('api_add_contact') }}", {
+            method: "POST",
+            body: formData
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                alert("新增成功");
+                location.reload();
+            } else {
+                alert("新增失敗：" + (data.message || "未知錯誤"));
+            }
+        }).catch(err => {
+            alert("新增失敗：" + err);
+        });
+    }
+
+    function editContact(contactId) {
+        const viewEl = document.getElementById("contact-view-" + contactId);
+        const formEl = document.getElementById("contact-form-" + contactId);
+        if (viewEl) viewEl.classList.add("hidden");
+        if (formEl) formEl.classList.remove("hidden");
+    }
+
+    function cancelEditContact(contactId) {
+        const viewEl = document.getElementById("contact-view-" + contactId);
+        const formEl = document.getElementById("contact-form-" + contactId);
+        if (formEl) {
+            formEl.classList.add("hidden");
+            formEl.reset();
+            // 恢復原始值
+            const viewRow = viewEl ? viewEl.closest(".contact-item") : null;
+            if (viewRow) {
+                const viewSpan = viewRow.querySelectorAll(".contact-view .contact-field span");
+                const fields = ["relationship", "name", "phone"];
+                viewSpan.forEach((span, i) => {
+                    const input = formEl.querySelector("[name='" + fields[i] + "']");
+                    if (input && input.tagName === "SELECT") {
+                        for (let opt of input.options) {
+                            opt.selected = (opt.textContent === span.textContent);
+                        }
+                    } else if (input) {
+                        input.value = span.textContent === "-" ? "" : span.textContent;
+                    }
+                });
+            }
+        }
+        if (viewEl) viewEl.classList.remove("hidden");
+    }
+
+    function saveContact(contactId) {
+        const formEl = document.getElementById("contact-form-" + contactId);
+        if (!formEl.checkValidity()) {
+            formEl.reportValidity();
+            return;
+        }
+        const formData = new FormData(formEl);
+
+        fetch("{{ url_for('api_update_contact', contact_id=0) }}".replace("0", contactId), {
+            method: "POST",
+            body: formData
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                alert("更新成功");
+                location.reload();
+            } else {
+                alert("更新失敗：" + (data.message || "未知錯誤"));
+            }
+        }).catch(err => {
+            alert("更新失敗：" + err);
+        });
+    }
+
+    function deleteContact(contactId) {
+        if (!confirm("確定要刪除此聯絡人？")) return;
+        fetch("{{ url_for('api_delete_contact', contact_id=0) }}".replace("0", contactId), {
+            method: "DELETE"
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                const row = document.getElementById("contact-row-" + contactId);
+                if (row) {
+                    row.style.transition = "opacity 0.3s";
+                    row.style.opacity = "0";
+                    setTimeout(() => {
+                        row.remove();
+                        const list = document.querySelector(".contact-list");
+                        if (list && list.querySelectorAll(".contact-item").length === 0) {
+                            list.innerHTML = '<div class="contact-empty">目前沒有聯絡人資料</div>';
+                        }
+                    }, 300);
+                }
+            } else {
+                alert("刪除失敗：" + (data.message || "未知錯誤"));
+            }
+        }).catch(err => {
+            alert("刪除失敗：" + err);
+        });
     }
 </script>
 {% endblock %}

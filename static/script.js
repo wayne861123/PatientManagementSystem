@@ -728,3 +728,34 @@ function deleteTodo(todoId) {
         alert("刪除失敗，請稍後再試");
     });
 }
+
+
+/* ==========================================================================
+   新增病患頁 - 聯絡人動態增刪
+   ========================================================================== */
+
+/**
+ * 新增一列聯絡人輸入欄
+ */
+function addContactRow() {
+    const container = document.getElementById('contacts-container');
+    const template = document.getElementById('contact-row-template');
+    if (!container || !template) return;
+
+    const clone = template.cloneNode(true);
+    clone.removeAttribute('id');  // 移除 id，避免重複
+    clone.style.display = 'block';  // 取消隱藏
+    container.appendChild(clone);
+}
+
+/**
+ * 移除指定的聯絡人輸入列
+ * @param {HTMLElement} btn - 刪除按鈕元素
+ */
+function removeContactRow(btn) {
+    const row = btn.closest('.contact-row');
+    if (row) {
+        row.parentNode.removeChild(row);
+    }
+}
+

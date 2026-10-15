@@ -505,6 +505,10 @@ def patient_detail(patient_id):
     cursor.execute("SELECT * FROM additional_medicines WHERE disable IS NULL OR disable = 0 ORDER BY id")
     additional_medicines = cursor.fetchall()
 
+    # 取得聯絡人列表
+    cursor.execute("SELECT * FROM patient_contacts WHERE patient_id = ? ORDER BY id ASC", (patient_id,))
+    contacts = cursor.fetchall()
+
     conn.close()
 
     if patient is None:
@@ -519,7 +523,8 @@ def patient_detail(patient_id):
                            examinations=examinations,
                            biological_medicines=biological_medicines,
                            traditional_medicines=traditional_medicines,
-                           additional_medicines=additional_medicines)
+                           additional_medicines=additional_medicines,
+                           contacts=contacts)
 
 
 @app.route("/history/examination/<int:patient_id>")
@@ -689,8 +694,39 @@ def add_patient():
                       (name, gender, birthday, phone, mobile, medical_record_number, id_number, city, district, address, doctor_id, disease_id, status, remark))
         record_id = cursor.lastrowid
         new_patient_data["id"] = record_id
+
+        # 批次新增聯絡人
+        contact_relationships = request.form.getlist("contact_relationship[]")
+        contact_names = request.form.getlist("contact_name[]")
+        contact_phones = request.form.getlist("contact_phone[]")
+
+        for rel, cname, cphone in zip(contact_relationships, contact_names, contact_phones):
+            if rel and rel.strip() and cname and cname.strip():
+                cursor.execute("""
+                    INSERT INTO patient_contacts (patient_id, relationship, name, phone)
+                    VALUES (?, ?, ?, ?)
+                """, (record_id, rel.strip(), cname.strip(), cphone.strip() if cphone else ""))
+                contact_record_id = cursor.lastrowid
+                log_db_action(
+                    cursor,
+                    action="INSERT",
+                    table_name="patient_contacts",
+                    record_id=contact_record_id,
+                    old_data=None,
+                    new_data={
+                        "id": contact_record_id,
+                        "patient_id": record_id,
+                        "relationship": rel.strip(),
+                        "name": cname.strip(),
+                        "phone": cphone.strip() if cphone else ""
+                    },
+                    sql_statement=f"INSERT INTO patient_contacts (patient_id, relationship, name, phone) VALUES ({record_id}, '{rel.strip()}', '{cname.strip()}', '{cphone.strip() if cphone else ''}')",
+                    operator="web",
+                    ip_address=flask_request.remote_addr
+                )
+
         conn.commit()
-        
+
         # 記錄審計日誌
         log_db_action(
             cursor,
@@ -2639,6 +2675,165 @@ def api_delete_document(doc_id):
     conn.close()
     
     logger.info(f"文件刪除成功: id={doc_id}, name={old_data['original_name']}")
+    return {"success": True}
+
+
+# ===========================================================================
+# API 路由 - 聯絡人 CRUD
+# ===========================================================================
+
+@app.route("/api/contact", methods=["POST"])
+def api_add_contact():
+    """新增聯絡人 API"""
+    patient_id = request.form.get("patient_id")
+    relationship = request.form.get("relationship")
+    name = request.form.get("name")
+    phone = request.form.get("phone")
+
+    # 必填欄位驗證
+    if not patient_id:
+        return {"success": False, "message": "缺少病患 ID"}, 400
+    if not relationship or relationship.strip() == "":
+        return {"success": False, "message": "請選擇與病人的關係"}, 400
+    if not name or not name.strip():
+        return {"success": False, "message": "請輸入聯絡人姓名"}, 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 檢查病患是否存在
+    cursor.execute("SELECT id FROM patients WHERE id = ?", (patient_id,))
+    if cursor.fetchone() is None:
+        conn.close()
+        return {"success": False, "message": "病人不存在"}, 404
+
+    # 檢查病患是否為隱藏狀態
+    cursor.execute("SELECT status FROM patients WHERE id = ?", (patient_id,))
+    status_row = cursor.fetchone()
+    if status_row and status_row["status"] == "隱藏":
+        conn.close()
+        return {"success": False, "message": "此病患已隱藏，無法新增聯絡人"}, 403
+
+    cursor.execute("""
+        INSERT INTO patient_contacts (patient_id, relationship, name, phone)
+        VALUES (?, ?, ?, ?)
+    """, (patient_id, relationship.strip(), name.strip(), phone.strip() if phone else ""))
+    record_id = cursor.lastrowid
+
+    new_data = {
+        "id": record_id,
+        "patient_id": int(patient_id),
+        "relationship": relationship.strip(),
+        "name": name.strip(),
+        "phone": phone.strip() if phone else ""
+    }
+    log_db_action(
+        cursor,
+        action="INSERT",
+        table_name="patient_contacts",
+        record_id=record_id,
+        old_data=None,
+        new_data=new_data,
+        sql_statement=f"INSERT INTO patient_contacts (patient_id, relationship, name, phone) VALUES ({patient_id}, '{relationship.strip()}', '{name.strip()}', '{phone.strip() if phone else ''}')",
+        operator="web",
+        ip_address=flask_request.remote_addr
+    )
+
+    conn.commit()
+    conn.close()
+
+    logger.info(f"新增聯絡人: id={record_id}, patient_id={patient_id}, name={name}")
+    return {"success": True}
+
+
+@app.route("/api/contact/<int:contact_id>", methods=["POST"])
+def api_update_contact(contact_id):
+    """編輯聯絡人 API"""
+    relationship = request.form.get("relationship")
+    name = request.form.get("name")
+    phone = request.form.get("phone")
+
+    # 必填欄位驗證
+    if not relationship or relationship.strip() == "":
+        return {"success": False, "message": "請選擇與病人的關係"}, 400
+    if not name or not name.strip():
+        return {"success": False, "message": "請輸入聯絡人姓名"}, 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 取得舊資料
+    cursor.execute("SELECT * FROM patient_contacts WHERE id = ?", (contact_id,))
+    old_contact = cursor.fetchone()
+    if old_contact is None:
+        conn.close()
+        return {"success": False, "message": "找不到該聯絡人"}, 404
+
+    old_data = dict(old_contact)
+
+    cursor.execute("""
+        UPDATE patient_contacts
+        SET relationship = ?, name = ?, phone = ?
+        WHERE id = ?
+    """, (relationship.strip(), name.strip(), phone.strip() if phone else "", contact_id))
+
+    new_data = {
+        "id": contact_id,
+        "patient_id": old_data["patient_id"],
+        "relationship": relationship.strip(),
+        "name": name.strip(),
+        "phone": phone.strip() if phone else ""
+    }
+    log_db_action(
+        cursor,
+        action="UPDATE",
+        table_name="patient_contacts",
+        record_id=contact_id,
+        old_data=old_data,
+        new_data=new_data,
+        sql_statement=f"UPDATE patient_contacts SET relationship='{relationship.strip()}', name='{name.strip()}', phone='{phone.strip() if phone else ''}' WHERE id={contact_id}",
+        operator="web",
+        ip_address=flask_request.remote_addr
+    )
+
+    conn.commit()
+    conn.close()
+
+    logger.info(f"更新聯絡人: id={contact_id}, name={name}")
+    return {"success": True}
+
+
+@app.route("/api/contact/<int:contact_id>", methods=["DELETE"])
+def api_delete_contact(contact_id):
+    """刪除聯絡人 API"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM patient_contacts WHERE id = ?", (contact_id,))
+    old_contact = cursor.fetchone()
+    if old_contact is None:
+        conn.close()
+        return {"success": False, "message": "找不到該聯絡人"}, 404
+
+    old_data = dict(old_contact)
+    cursor.execute("DELETE FROM patient_contacts WHERE id = ?", (contact_id,))
+
+    log_db_action(
+        cursor,
+        action="DELETE",
+        table_name="patient_contacts",
+        record_id=contact_id,
+        old_data=old_data,
+        new_data=None,
+        sql_statement=f"DELETE FROM patient_contacts WHERE id = {contact_id}",
+        operator="web",
+        ip_address=flask_request.remote_addr
+    )
+
+    conn.commit()
+    conn.close()
+
+    logger.info(f"刪除聯絡人: id={contact_id}, name={old_data['name']}")
     return {"success": True}
 
 

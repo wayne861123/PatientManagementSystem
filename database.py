@@ -178,6 +178,14 @@ TABLES = {
         "file_type": "TEXT",
         "file_size": "INTEGER",
         "created_at": "TEXT DEFAULT (datetime('now', 'localtime'))"
+    },
+    "patient_contacts": {
+        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "patient_id": "INTEGER",
+        "relationship": "TEXT",
+        "name": "TEXT",
+        "phone": "TEXT",
+        "created_at": "TEXT DEFAULT (datetime('now', 'localtime'))"
     }
 }
 

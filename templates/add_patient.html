@@ -136,6 +136,43 @@
                 </div>
             </div>
         </div>
+
+        <!-- 聯絡人 -->
+        <div class="form-section">
+            <h3>聯絡人</h3>
+            <div style="margin-bottom: 10px;">
+                <a href="javascript:void(0)" class="general-btn" onclick="addContactRow()">＋ 新增聯絡人</a>
+            </div>
+            <div id="contacts-container"></div>
+            <div id="contact-row-template" class="contact-row" style="display:none;">
+                <div class="contact-input-row">
+                    <div class="contact-input-group">
+                        <label>關係</label>
+                        <select name="contact_relationship[]" class="contact-rel-select">
+                            <option value="">請選擇</option>
+                            <option value="父母">父母</option>
+                            <option value="配偶">配偶</option>
+                            <option value="子女">子女</option>
+                            <option value="親戚">親戚</option>
+                            <option value="朋友">朋友</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="contact-input-group">
+                        <label>姓名</label>
+                        <input type="text" name="contact_name[]" class="contact-name-input" placeholder="聯絡人姓名">
+                    </div>
+                    <div class="contact-input-group">
+                        <label>電話</label>
+                        <input type="text" name="contact_phone[]" class="contact-phone-input" placeholder="聯絡電話">
+                    </div>
+                </div>
+                <div class="contact-row-actions">
+                    <a href="javascript:void(0)" class="general-btn btn-small" onclick="removeContactRow(this)">刪除</a>
+                </div>
+            </div>
+        </div>
+
         <button type="submit" class="submit-btn">儲存病患資料</button>
     </div>
 </form>

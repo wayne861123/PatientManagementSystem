@@ -1746,3 +1746,129 @@ select {
 .todo-empty-text {
     font-size: 1.1rem;
 }
+
+/* ==========================================================================
+   聯絡人樣式
+   ========================================================================== */
+
+.contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.contact-item {
+    background: #fafafa;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 10px;
+    padding: 15px;
+    transition: border-color 0.3s;
+}
+
+.contact-item:hover {
+    border-color: rgba(212, 175, 55, 0.6);
+}
+
+.contact-view {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 15px;
+    align-items: center;
+}
+
+.contact-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.contact-field label {
+    color: #888;
+    margin-bottom: 4px;
+}
+
+.contact-field span {
+    font-weight: 500;
+    color: #2C2C2C;
+}
+
+.contact-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.contact-input-area {
+    background: #ffffff;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.contact-input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+    align-items: end;
+}
+
+.contact-input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.contact-input-group label {
+    margin-bottom: 5px;
+}
+
+.contact-input-group select,
+.contact-input-group input {
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.contact-input-group select:focus,
+.contact-input-group input:focus {
+    outline: none;
+    border-color: #D4AF37;
+    box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
+}
+
+.contact-empty {
+    text-align: center;
+    padding: 30px;
+    color: #999;
+}
+
+.contact-edit {
+    padding-top: 5px;
+}
+
+.btn-small {
+    padding: 5px 12px !important;
+    font-size: 1rem !important;
+}
+
+/* ==========================================================================
+   新增病患頁 - 聯絡人列樣式
+   ========================================================================== */
+
+.contact-row {
+    background: #fafafa;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.contact-row-actions {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 2px;
+    margin-top: 10px;
+}

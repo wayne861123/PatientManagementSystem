@@ -30,7 +30,8 @@ ALLOWED_REVERT_TABLES = {
     "doctors", "diseases", "patients", "examinations",
     "traditional_medicines", "biological_medicines", "additional_medicines",
     "traditional_medicine_record", "biological_medicine_record",
-    "examination_record", "documents", "audit_log", "pasi_records"
+    "examination_record", "documents", "audit_log", "pasi_records",
+    "patient_contacts"
 }
 
 
