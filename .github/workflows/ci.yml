@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-check:
+    runs-on: windows-latest
+
+    steps:
+      - name: 取得原始碼
+        uses: actions/checkout@v4
+
+      - name: 安裝 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安裝 uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: 安裝相依套件
+        run: uv sync --all-extras
+
+      - name: 打包驗證
+        run: uv run python build_exe.py --clean
+
+      - name: 確認執行檔存在
+        shell: pwsh
+        run: |
+          if (Test-Path "dist\PatientManagementSystem\PatientManagementSystem.exe") {
+            Write-Output "打包成功"
+          } else {
+            Write-Error "打包失敗：找不到執行檔"
+            exit 1
+          }

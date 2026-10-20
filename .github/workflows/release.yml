@@ -1,0 +1,91 @@
+name: Release
+
+# 觸發條件：
+#   - 推送 tag（v1.2.3）時自動打包並發佈 Release
+#   - 手動觸發（workflow_dispatch）
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要發佈的版本標籤 (例如 v1.2.3)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: 取得原始碼
+        uses: actions/checkout@v4
+
+      - name: 安裝 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安裝 uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: 安裝相依套件
+        run: uv sync --all-extras
+
+      - name: 打包執行檔
+        run: uv run python build_exe.py --clean
+
+      - name: 壓縮成 zip
+        shell: pwsh
+        run: |
+          $version = (Get-Content version_info.txt).Trim()
+          $name = "PatientManagementSystem-$version-windows-x64"
+          Compress-Archive -Path "dist\PatientManagementSystem\*" -DestinationPath "dist\$name.zip"
+          Write-Output "已建立 dist\$name.zip"
+
+      - name: 計算 checksum
+        shell: pwsh
+        run: |
+          $version = (Get-Content version_info.txt).Trim()
+          $name = "PatientManagementSystem-$version-windows-x64.zip"
+          $hash = (Get-FileHash "dist\$name" -Algorithm SHA256).Hash.ToLower()
+          "$hash  $name" | Out-File "dist\$name.sha256" -Encoding utf8
+          Write-Output "SHA256: $hash"
+
+      - name: 產生發行說明
+        shell: pwsh
+        run: |
+          $version = (Get-Content version_info.txt).Trim()
+          $notes = @"
+          ## $version
+
+          醫師門診管理系統 $version
+
+          ### 安裝
+          1. 下載 `PatientManagementSystem-$version-windows-x64.zip`
+          2. 解壓縮到任意資料夾（例如 `C:\PatientManagementSystem`）
+          3. 執行 `PatientManagementSystem.exe`
+
+          ### 資料存放位置
+          資料庫與備份存放在 `%LOCALAPPDATA%\PatientManagementSystem`，
+          更新程式不會影響使用者資料。
+
+          ### 驗證
+          可用 `$name.sha256` 檔案核對下載內容的完整性。
+          "@@
+          $notes | Out-File "release_notes.md" -Encoding utf8
+
+      - name: 發佈 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: PatientManagementSystem ${{ github.event.inputs.tag || github.ref_name }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          files: |
+            dist/PatientManagementSystem-*-windows-x64.zip
+            dist/PatientManagementSystem-*-windows-x64.zip.sha256
