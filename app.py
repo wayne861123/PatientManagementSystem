@@ -607,35 +607,51 @@ def all_medicine_record(patient_id):
         except (ValueError, TypeError):
             return None
 
-    # 合併並依日期排序（最新優先）
-    history = []
-    while trad_stack or bio_stack:
-        trad = trad_stack[-1] if trad_stack else None
-        bio = bio_stack[-1] if bio_stack else None
+    # 合併所有記錄，加入 type 與 display_name
+    # 注意：name 欄位為 TEXT 型別，而 medicine_name_map 的 key 來自 INTEGER id，
+    #       需統一轉為整數後查詢，否則會取不到藥物名稱而顯示數字 id
+    all_records = []
+    for r in trad_stack:
+        r["type"] = "traditional"
+        mid = r.get("name")
+        r["display_name"] = medicine_name_map.get(safe_int(mid), str(mid) if mid else "")
+        all_records.append(r)
+    for r in bio_stack:
+        r["type"] = "biological"
+        mid = r.get("name")
+        r["display_name"] = medicine_name_map.get(safe_int(mid), str(mid) if mid else "")
+        all_records.append(r)
 
-        trad_date = _safe_date(trad["followup_date"]) if trad else None
-        bio_date = _safe_date(bio["followup_date"]) if bio else None
+    # 以 type（traditional 先）+ display_name + 日期（最新優先）排序
+    all_records.sort(key=lambda r: (
+        0 if r["type"] == "traditional" else 1,
+        r["display_name"] or "",
+        -(_safe_date(r["followup_date"]) or datetime.min).toordinal()
+    ))
 
-        # None 日期視為最舊；同日時 trad 優先
-        if (trad and bio and trad_date is not None and bio_date is not None and trad_date >= bio_date) or \
-           (trad and (bio is None or bio_date is None)):
-            record = trad_stack.pop()
-            record["type"] = "traditional"
+    # 依 display_name 分組
+    groups = []
+    current_group = None
+    for record in all_records:
+        if current_group is None or current_group["display_name"] != record["display_name"]:
+            if current_group is not None:
+                groups.append(current_group)
+            current_group = {
+                "type": record["type"],
+                "display_name": record["display_name"],
+                "records": [record]
+            }
         else:
-            record = bio_stack.pop()
-            record["type"] = "biological"
-
-        # 用預載 mapping 取得藥物名稱（O(1)）
-        mid = record.get("name")
-        record["display_name"] = medicine_name_map.get(mid, str(mid) if mid else "")
-        history.append(record)
+            current_group["records"].append(record)
+    if current_group is not None:
+        groups.append(current_group)
 
     # 取得額外藥物列表（用於勾選）
     cursor.execute("SELECT * FROM additional_medicines WHERE disable IS NULL OR disable = 0 ORDER BY id")
     additional_medicines = cursor.fetchall()
 
     conn.close()
-    return render_template("history.html", patient=patient, history=history, additional_medicines=additional_medicines)
+    return render_template("history.html", patient=patient, groups=groups, additional_medicines=additional_medicines)
 
 @app.route("/add_patient", methods=["GET", "POST"])
 def add_patient():

@@ -1,69 +1,102 @@
 {% extends 'base.html' %}
 {% block header %}病患用藥歷史紀錄{% endblock %}
 {% block container %}
-<div class="detail-card w-1000">    <h1 class="detail-patient-name">{{ patient.name }}</h1>
-    {% for his in history %}
-        <form id="form-{{ his.id }}">
-            <input type="hidden" name="record_id" value="{{ his.record_id }}" disabled>
-            <input type="hidden" name="patient_id" value="{{ his.patient_id }}" disabled>
-            <input type="hidden" name="id" value="{{ his.id }}" disabled>
-            <input type="hidden" name="type" value="{{ his.type }}" disabled>
-            <div class="history-grid history-item">
-                <div class="center">
-                    <label>{{ loop.index }}</label>
-                </div>
-                <div>
-                    <div class="history-item pb-5">
-                        <label>藥物類型</label>
-                        {% if his.type == "biological" %}
+<div class="detail-card w-1000">
+    <h1 class="detail-patient-name">{{ patient.name }}</h1>
+
+    {% if groups %}
+    <!-- 工具列 -->
+    <div class="history-toolbar">
+        <button type="button" class="general-btn" onclick="expandAllGroups()">全部展開</button>
+        <button type="button" class="general-btn" onclick="collapseAllGroups()">全部收合</button>
+        <span class="history-total-count">共 {{ groups|length }} 種藥物</span>
+    </div>
+
+    {% for group in groups %}
+    <!-- 群組 -->
+    <div class="history-group" id="group-{{ loop.index }}">
+        <!-- 群組標題列（可點擊展開/收合）-->
+        <div class="history-group-header" onclick="toggleGroup({{ loop.index }})" role="button" tabindex="0" aria-expanded="true">
+            <span class="toggle-icon" id="icon-{{ loop.index }}">▼</span>
+            <span class="group-medicine-icon">💊</span>
+            <span class="group-medicine-name">{{ group.display_name }}</span>
+            <span class="group-medicine-type">
+                {% if group.type == "biological" %}（生物製劑）{% else %}（傳統用藥）{% endif %}
+            </span>
+            <span class="group-count">共 {{ group.records|length }} 筆</span>
+        </div>
+
+        <!-- 群組內容 -->
+        <div class="history-group-content" id="content-{{ loop.index }}">
+            {% for record in group.records %}
+            <form id="form-{{ record.id }}">
+                <input type="hidden" name="record_id" value="{{ record.record_id }}" disabled>
+                <input type="hidden" name="patient_id" value="{{ record.patient_id }}" disabled>
+                <input type="hidden" name="id" value="{{ record.id }}" disabled>
+                <input type="hidden" name="type" value="{{ record.type }}" disabled>
+                <div class="history-grid history-item">
+                    <div class="center">
+                        <label>{{ loop.index }}</label>
+                    </div>
+                    <div>
+                        <div class="history-item pb-5">
+                            <label>藥物類型</label>
+                            {% if record.type == "biological" %}
                             <p>生物製劑</p>
-                        {% else %}
+                            {% else %}
                             <p>傳統用藥</p>
+                            {% endif %}
+                        </div>
+                        <div class="history-item">
+                            <label>藥物名稱</label>
+                            <p>{{ record.display_name if record.display_name else record.name }}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="history-item">
+                            <label>回診時間</label>
+                            <input class="info-input" type="date" name="followup_date" value="{{ record.followup_date }}" disabled>
+                        </div>
+                        {% if record.type == "biological" %}
+                        <div class="history-item">
+                            <label>剩餘針數</label>
+                            <input class="info-input" type="number" name="remain_dose" value="{{ record.remain_dose }}" disabled>
+                        </div>
                         {% endif %}
                     </div>
                     <div class="history-item">
-                        <label>藥物名稱</label>
-                        <p>{{ his.display_name if his.display_name else his.name }}</p>
-                    </div>
-                </div>
-                <div>
-                    <div class="history-item">
-                        <label>回診時間</label>
-                        <input class="info-input" type="date" name="followup_date" value="{{ his.followup_date }}" disabled>
-                    </div>
-                    {% if his.type == "biological" %}
-                        <div class="history-item">
-                            <label>剩餘針數</label>
-                            <input class="info-input" type="number" name="remain_dose" value="{{ his.remain_dose }}" disabled>
+                        <label>額外藥物</label>
+                        <textarea class="textarea additional-medicine-textarea" id="additional-medicine-textarea-{{ record.id }}" disabled>{{ "\n".join(record.additional_medicine.split(",")) if record.additional_medicine else '' }}</textarea>
+                        <input type="hidden" id="additional-medicine-hidden-{{ record.id }}" name="additional_medicine" value="{{ record.additional_medicine if record.additional_medicine else '' }}">
+                        <div class="checkbox-scroll-container additional-medicine-checkbox-container hidden" id="additional-medicine-checkbox-container-{{ record.id }}">
+                            {% for med in additional_medicines %}
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="edit-additional-medicine-checkbox" data-record-id="{{ record.id }}" value="{{ med.name }}" {% if record.additional_medicine and med.name in record.additional_medicine %}checked{% endif %}>
+                                <span>{{ med.name }}</span>
+                            </label>
+                            {% endfor %}
                         </div>
-                    {% endif %}
-                </div>
-                <div class="history-item">
-                    <label>額外藥物</label>
-                    <textarea class="textarea additional-medicine-textarea" id="additional-medicine-textarea-{{ his.id }}" disabled>{{ "\n".join(his.additional_medicine.split(",")) if his.additional_medicine else '' }}</textarea>
-                    <input type="hidden" id="additional-medicine-hidden-{{ his.id }}" name="additional_medicine" value="{{ his.additional_medicine if his.additional_medicine else '' }}">
-                    <div class="checkbox-scroll-container additional-medicine-checkbox-container hidden" id="additional-medicine-checkbox-container-{{ his.id }}">
-                        {% for med in additional_medicines %}
-                        <label class="checkbox-label">
-                            <input type="checkbox" class="edit-additional-medicine-checkbox" data-record-id="{{ his.id }}" value="{{ med.name }}" {% if his.additional_medicine and med.name in his.additional_medicine %}checked{% endif %}>
-                            <span>{{ med.name }}</span>
-                        </label>
-                        {% endfor %}
+                    </div>
+                    <div class="history-item">
+                        <label>備註</label>
+                        <textarea name="remark" class="textarea" disabled>{{ record.remark }}</textarea>
+                    </div>
+                    <div class="btn-group">
+                    <a id="edit-btn-{{ record.id }}" href="javascript:void(0)" class="general-btn" onclick="enableRowEditing('{{ record.id }}')">編輯</a>
+                    <a id="save-btn-{{ record.id }}" href="javascript:void(0)" class="general-btn hidden" onclick="saveRow('{{ record.id }}')">保存</a>
+                    <a id="cancel-btn-{{ record.id }}" href="javascript:void(0)" class="general-btn hidden" onclick="cancelRow('{{ record.id }}')">取消</a>
+                    <a id="delete-btn-{{ record.id }}" href="javascript:void(0);" class="general-btn" onclick="deleteHistory('{{ record.id }}')">刪除</a>
                     </div>
                 </div>
-                <div class="history-item">
-                    <label>備註</label>
-                    <textarea name="remark" class="textarea" disabled>{{ his.remark }}</textarea>
-                </div>
-                <div class="btn-group">
-                <a id="edit-btn-{{ his.id }}" href="javascript:void(0)" class="general-btn" onclick="enableRowEditing('{{ his.id }}')">編輯</a>
-                <a id="save-btn-{{ his.id }}" href="javascript:void(0)" class="general-btn hidden" onclick="saveRow('{{ his.id }}')">保存</a>
-                <a id="cancel-btn-{{ his.id }}" href="javascript:void(0)" class="general-btn hidden" onclick="cancelRow('{{ his.id }}')">取消</a>
-                <a id="delete-btn-{{ his.id }}" href="javascript:void(0);" class="general-btn" onclick="deleteHistory('{{ his.id }}', '{{ his.type }}')">刪除</a>
-            </div>
+            </form>
+            {% endfor %}
         </div>
-    </form>
-    {% endfor%}
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="no-data-message">目前沒有用藥歷史記錄</div>
+    {% endif %}
 </div>
 <script>
     // 儲存原始值，取消時恢復用
@@ -231,5 +264,62 @@
         });
         hiddenInput.value = selectedMedicines.join(',');
     }
+
+    // =========================================================================
+    // 群組展開 / 收合功能
+    // =========================================================================
+
+    /**
+     * 切換單一群的展開/收合狀態
+     * @param {number} groupIndex - 群組索引（從 1 開始，與 loop.index 對應）
+     */
+    function toggleGroup(groupIndex) {
+        const content = document.getElementById('content-' + groupIndex);
+        const icon = document.getElementById('icon-' + groupIndex);
+        if (!content || !icon) return;
+
+        const isExpanded = !content.classList.contains('collapsed');
+        if (isExpanded) {
+            content.classList.add('collapsed');
+            icon.textContent = '▶';
+            icon.parentElement.setAttribute('aria-expanded', 'false');
+        } else {
+            content.classList.remove('collapsed');
+            icon.textContent = '▼';
+            icon.parentElement.setAttribute('aria-expanded', 'true');
+        }
+    }
+
+    /**
+     * 全部展開
+     */
+    function expandAllGroups() {
+        document.querySelectorAll('.history-group-content.collapsed').forEach(el => {
+            el.classList.remove('collapsed');
+        });
+        document.querySelectorAll('.history-group-header').forEach(el => {
+            el.setAttribute('aria-expanded', 'true');
+        });
+        document.querySelectorAll('.toggle-icon').forEach(el => {
+            el.textContent = '▼';
+        });
+    }
+
+    /**
+     * 全部收合
+     */
+    function collapseAllGroups() {
+        document.querySelectorAll('.history-group-content').forEach(el => {
+            el.classList.add('collapsed');
+        });
+        document.querySelectorAll('.history-group-header').forEach(el => {
+            el.setAttribute('aria-expanded', 'false');
+        });
+        document.querySelectorAll('.toggle-icon').forEach(el => {
+            el.textContent = '▶';
+        });
+    }
+
+    // 鍵盤支援：群組標題已有 tabindex="0" + onclick，Enter/Space 自動觸發 onclick
 </script>
 {% endblock %}
