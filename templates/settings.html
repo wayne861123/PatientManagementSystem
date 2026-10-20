@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block header %}系統設定{% endblock %}
+{% block container %}
+
+<div class="detail-card w-1000">
+    <h1 class="detail-patient-name">版本與更新</h1>
+
+    <!-- 版本資訊 -->
+    <div class="info-section">
+        <h3>版本資訊</h3>
+        <div class="info-grid">
+            <div class="info-item"><label>目前版本</label><span id="current-version">{{ current_version }}</span></div>
+            <div class="info-item"><label>最新版本</label><span id="latest-version">-</span></div>
+            <div class="info-item"><label>執行模式</label><span>{{ '打包執行檔' if is_frozen else '原始碼 (開發模式)' }}</span></div>
+            <div class="info-item"><label>資料夾位置</label><span id="data-dir">{{ data_dir }}</span></div>
+        </div>
+        <div class="btn-group mt-20">
+            <a href="javascript:void(0);" class="general-btn" id="btn-check-update" onclick="checkUpdate()">檢查更新</a>
+            {% if can_self_update %}
+            <a href="javascript:void(0);" class="general-btn" id="btn-do-update" onclick="doUpdate()" disabled>下載並安裝更新</a>
+            {% endif %}
+        </div>
+        <div id="update-message" class="update-message hidden"></div>
+    </div>
+
+    <!-- 版本選擇 -->
+    <div class="info-section">
+        <h3>選擇版本</h3>
+        <p class="section-hint">可切換至任何已發布的版本。切換前會自動建立資料庫備份。</p>
+        <div class="form-row">
+            <div class="form-group">
+                <select id="version-select" class="text-input">
+                    <option value="">載入中...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <a href="javascript:void(0);" class="general-btn" id="btn-switch-version" onclick="switchVersion()">切換至此版本</a>
+            </div>
+        </div>
+        <div id="version-list" class="version-list"></div>
+    </div>
+
+    <!-- 備份 -->
+    <div class="info-section">
+        <h3>資料備份</h3>
+        <div class="info-grid">
+            <div class="info-item"><label>備份份數</label><span id="backup-count">{{ backup_stats.count }}</span></div>
+            <div class="info-item"><label>佔用空間</label><span id="backup-size">{{ backup_stats.total_size }} bytes</span></div>
+            <div class="info-item"><label>保留上限</label><span>每日備份保留 {{ backup_stats.keep }} 份</span></div>
+            <div class="info-item"><label>資料庫完整性</label><span id="integrity-status">檢查中...</span></div>
+        </div>
+        <div class="btn-group mt-20">
+            <a href="javascript:void(0);" class="general-btn" onclick="createBackup()">立即建立備份</a>
+            <a href="javascript:void(0);" class="general-btn" onclick="checkIntegrity()">檢查資料庫完整性</a>
+        </div>
+        <div id="backup-message" class="update-message hidden"></div>
+
+        <h4 class="mt-20">備份清單</h4>
+        <table class="document-table">
+            <thead>
+                <tr>
+                    <th>時間</th>
+                    <th>原因</th>
+                    <th>大小</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in backups %}
+                <tr>
+                    <td>{{ b.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>
+                        {{ b.reason }}
+                        {% if b.pinned %}<span class="badge-pinned">永久保留</span>{% endif %}
+                    </td>
+                    <td>{{ b.size }} bytes</td>
+                    <td>
+                        <a href="javascript:void(0);" class="general-btn btn-small"
+                           onclick="restoreBackup('{{ b.name }}')">還原</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="no-data-message">目前沒有備份</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='settings.js') }}"></script>
+{% endblock %}

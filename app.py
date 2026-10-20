@@ -2572,6 +2572,24 @@ def management_documents():
 
 
 # ===========================================================================
+# 系統設定頁面
+# ===========================================================================
+
+@app.route("/settings")
+def settings():
+    """系統設定頁面（版本、更新、備份）"""
+    return render_template(
+        "settings.html",
+        current_version=version.current_version(),
+        is_frozen=paths.is_frozen(),
+        data_dir=paths.data_dir(),
+        can_self_update=updater.can_self_update(),
+        backups=backup.list_backups(),
+        backup_stats=backup.backup_stats(),
+    )
+
+
+# ===========================================================================
 # 版本管理 API
 # ===========================================================================
 

@@ -1872,3 +1872,183 @@ select {
     padding-bottom: 2px;
     margin-top: 10px;
 }
+
+
+/* ==========================================================================
+   用藥歷史群組樣式（history.html）
+   ========================================================================== */
+
+/* 工具列 */
+.history-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.history-total-count {
+    margin-left: auto;
+    color: #888;
+    font-size: 1rem;
+}
+
+/* 群組包裝 */
+.history-group {
+    margin-bottom: 15px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* 群組標題列（可點擊展開/收合）*/
+.history-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 15px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
+    border-bottom: 2px solid rgba(212, 175, 55, 0.4);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+    font-size: 1rem;
+}
+
+.history-group-header:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.15) 100%);
+}
+
+.toggle-icon {
+    font-size: 0.9rem;
+    color: #D4AF37;
+    flex-shrink: 0;
+}
+
+.group-medicine-icon {
+    font-size: 1rem;
+}
+
+.group-medicine-name {
+    font-weight: bold;
+    color: #2C2C2C;
+}
+
+.group-medicine-type {
+    color: #666;
+}
+
+.group-count {
+    margin-left: auto;
+    color: #888;
+    font-size: 0.95rem;
+}
+
+/* 群組內容（可展開/收合）*/
+.history-group-content {
+    transition: all 0.2s;
+}
+
+.history-group-content.collapsed {
+    display: none;
+}
+
+/* 群組內的記錄列（與原本 .history-grid 無縫接軌）*/
+.history-group-content .history-grid {
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.history-group-content .history-grid:last-child {
+    border-bottom: none;
+}
+
+/* 無資料提示 */
+.no-data-message {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    font-size: 1rem;
+}
+
+/* ===========================================================================
+   系統設定頁面 - 版本管理與資料備份
+   =========================================================================== */
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.section-hint {
+    color: #888;
+    font-size: 0.9rem;
+    margin: 8px 0 14px 0;
+    line-height: 1.6;
+}
+
+/* 訊息提示 */
+.update-message {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.update-message.msg-ok {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border-left: 4px solid #4caf50;
+}
+
+.update-message.msg-error {
+    background-color: #ffebee;
+    color: #c62828;
+    border-left: 4px solid #f44336;
+}
+
+/* 版本清單 */
+.version-list {
+    margin-top: 14px;
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background-color: #fafafa;
+}
+
+.version-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+}
+
+.version-item:last-child {
+    border-bottom: none;
+}
+
+.version-tag {
+    font-weight: bold;
+    color: #333;
+    min-width: 90px;
+}
+
+.version-date {
+    color: #888;
+}
+
+/* 永久保留 / 目前版本 標籤 */
+.badge-pinned {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    background-color: #e3f2fd;
+    color: #1565c0;
+    margin-left: 6px;
+}
+
