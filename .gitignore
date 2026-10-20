@@ -140,6 +140,15 @@ config.py
 *.db
 *.sqlite
 *.sqlite3
+*.db-wal
+*.db-shm
+*.db.migrated
+
+# Backups
+backups/
+
+# Version info (build artifact)
+version_info.txt
 
 # Logs
 logs/
@@ -149,3 +158,12 @@ logs/
 *.bak
 *.tmp
 documents/*
+uploads/
+
+# Tests (local only, never commit)
+tests/
+pytest.ini
+run_tests.py
+
+# Dev-only scripts (種子資料等開發者工具，使用者不需要)
+scripts/
