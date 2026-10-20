@@ -13,6 +13,7 @@ import uuid
 import sqlite3
 
 import paths
+import backup
 
 # 初始化 Flask 應用
 app = Flask(__name__)
@@ -23,6 +24,29 @@ paths.ensure_data_dirs()
 
 # 初始化資料庫
 init_db()
+
+# 啟動時保護使用者資料：
+#   1. 檢查資料庫完整性，損毀則自動從最新備份還原
+#   2. 若今天尚未備份，補建立一份
+def _startup_data_protection():
+    """啟動時的資料保護作業"""
+    try:
+        recovery = backup.auto_recover_if_corrupt()
+        if recovery['recovered']:
+            logger.warning(f"資料庫已自動還原: {recovery['message']}")
+            print(f"[ warning ] {recovery['message']}")
+        elif not recovery['message'].startswith('資料庫正常'):
+            logger.error(f"資料庫完整性異常: {recovery['message']}")
+            print(f"[ error ] {recovery['message']}")
+
+        created = backup.ensure_daily_backup()
+        if created:
+            logger.info(f"已建立每日備份: {created}")
+    except Exception as e:  # 保護機制本身不應阻擋程式啟動
+        logger.error(f"啟動資料保護作業失敗: {e}")
+
+
+_startup_data_protection()
 
 
 # ===========================================================================
@@ -2542,6 +2566,64 @@ def management_documents():
     documents = cursor.fetchall()
     conn.close()
     return render_template("documents.html", documents=documents)
+
+
+# ===========================================================================
+# 資料庫備份 API
+# ===========================================================================
+
+@app.route("/api/backup/create", methods=["POST"])
+def api_create_backup():
+    """立即建立一份資料庫備份"""
+    path = backup.create_backup("manual")
+    if not path:
+        return {"success": False, "message": "建立備份失敗"}
+    return {"success": True, "message": "備份已建立", "name": os.path.basename(path)}
+
+
+@app.route("/api/backup/list")
+def api_list_backups():
+    """列出備份"""
+    return {
+        "backups": [
+            {
+                "name": b["name"],
+                "reason": b["reason"],
+                "created_at": b["created_at"].strftime("%Y-%m-%d %H:%M:%S"),
+                "size": b["size"],
+                "pinned": b["pinned"],
+            }
+            for b in backup.list_backups()
+        ],
+        "stats": backup.backup_stats(),
+    }
+
+
+@app.route("/api/backup/check")
+def api_check_integrity():
+    """檢查資料庫完整性"""
+    result = backup.verify_integrity()
+    return {"ok": result["ok"], "message": result["message"]}
+
+
+@app.route("/api/backup/restore", methods=["POST"])
+def api_restore_backup():
+    """從備份還原資料庫"""
+    data = request.get_json(silent=True) or {}
+    name = data.get("name")
+    if not name:
+        return {"success": False, "message": "未指定備份檔名"}, 400
+
+    # 僅允許還原 backups 資料夾內的檔案（防止路徑穿越）
+    backup_dir = os.path.abspath(paths.backup_dir())
+    target = os.path.abspath(os.path.join(backup_dir, os.path.basename(name)))
+    if not target.startswith(backup_dir) or not os.path.exists(target):
+        return {"success": False, "message": "找不到備份檔"}, 404
+
+    ok, msg = backup.restore_backup(target)
+    if ok:
+        logger.info(f"已從備份還原: {name}")
+    return {"success": ok, "message": msg}
 
 
 @app.route("/api/upload/document", methods=["POST"])
