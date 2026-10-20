@@ -11,9 +11,12 @@ from datetime import datetime, timedelta
 import os
 import uuid
 import sqlite3
+import time
 
 import paths
 import backup
+import version
+import updater
 
 # 初始化 Flask 應用
 app = Flask(__name__)
@@ -2569,6 +2572,75 @@ def management_documents():
 
 
 # ===========================================================================
+# 版本管理 API
+# ===========================================================================
+
+@app.route("/api/check/update")
+def api_check_update():
+    """檢查是否有新版本"""
+    result = version.check_for_update()
+    return {
+        "current": result["current"],
+        "latest": result["latest"],
+        "has_update": result["has_update"],
+        "error": result["error"],
+    }
+
+
+@app.route("/api/list/versions")
+def api_list_versions():
+    """列出所有可選版本"""
+    releases = version.fetch_all_releases()
+    return {
+        "current": version.current_version(),
+        "releases": [
+            {
+                "tag": r["tag"],
+                "name": r["name"],
+                "published_at": r["published_at"],
+                "url": r["url"],
+                "assets": r["assets"],
+            }
+            for r in releases
+        ],
+    }
+
+
+@app.route("/api/apply/update", methods=["POST"])
+def api_apply_update():
+    """下載並安裝更新"""
+    ok, msg = updater.perform_update()
+    return {"success": ok, "message": msg}
+
+
+@app.route("/api/switch/version", methods=["POST"])
+def api_switch_version():
+    """切換至指定版本"""
+    data = request.get_json(silent=True) or {}
+    tag = data.get("tag")
+    if not tag:
+        return {"success": False, "message": "未指定版本"}, 400
+
+    # 找出對應的 Release
+    target = None
+    for rel in version.fetch_all_releases():
+        if rel["tag"] == tag:
+            target = rel
+            break
+
+    if not target:
+        return {"success": False, "message": f"找不到版本 {tag}"}, 404
+
+    # 建立切換前快照
+    snapshot = backup.create_backup("upgrade")
+    if snapshot:
+        logger.info(f"版本切換前快照: {snapshot}")
+
+    ok, msg = updater.perform_update(target)
+    return {"success": ok, "message": msg}
+
+
+# ===========================================================================
 # 資料庫備份 API
 # ===========================================================================
 
@@ -2944,6 +3016,28 @@ def api_delete_contact(contact_id):
 # 程式啟動
 # ===========================================================================
 
+def _open_browser_after(delay=1.5):
+    """啟動後自動開啟瀏覽器（僅打包模式，避免干擾開發者）"""
+    if not paths.is_frozen():
+        return
+    if os.environ.get("PMS_NO_BROWSER", "").lower() in ("1", "true", "yes"):
+        return
+
+    import threading
+    import webbrowser
+
+    def _open():
+        time.sleep(delay)
+        host = os.environ.get("PMS_HOST", "127.0.0.1")
+        port = os.environ.get("PMS_PORT", "5000")
+        try:
+            webbrowser.open(f"http://{host}:{port}")
+        except Exception:
+            pass
+
+    threading.Thread(target=_open, daemon=True).start()
+
+
 def main():
     """程式進入點（供 pyproject.toml 的 [project.scripts] 使用）
 
@@ -2951,6 +3045,7 @@ def main():
       PMS_HOST       監聽位址（預設 127.0.0.1，僅本機可存取）
       PMS_PORT       監聽埠號（預設 5000）
       PMS_DEBUG      設為 1 開啟除錯模式（預設關閉）
+      PMS_NO_BROWSER 設為 1 不自動開啟瀏覽器
     """
     host = os.environ.get("PMS_HOST", "127.0.0.1")
     port = int(os.environ.get("PMS_PORT", "5000"))
@@ -2959,6 +3054,8 @@ def main():
     logger.info(f"啟動 {paths.APP_TITLE} - 資料夾: {paths.data_dir()}")
     print(f"{paths.APP_TITLE} 啟動中...  http://{host}:{port}")
     print(f"資料位置: {paths.data_dir()}")
+
+    _open_browser_after()
     app.run(host=host, port=port, debug=debug)
 
 
