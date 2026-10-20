@@ -2,20 +2,29 @@ import sqlite3
 import os
 import json
 import logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from functools import wraps
 
+import paths
 
-BASE_PATH = os.path.dirname(__file__)
-DB_NAME = os.path.join(BASE_PATH, "patients.db")
+
+# 程式資源（唯讀）與使用者資料（可寫）路徑
+BASE_PATH = paths.app_dir()
+DATA_DIR = paths.data_dir()
+DB_NAME = paths.db_path()
+
+# 日誌輪替設定：單檔上限 2MB，保留 3 個歷史檔（共最多 8MB）
+LOG_MAX_BYTES = 2 * 1024 * 1024
+LOG_BACKUP_COUNT = 3
 
 # ===========================================================================
 # Logging 設定
 # ===========================================================================
 
 def setup_logging():
-    """設定檔案日誌"""
-    log_dir = os.path.join(BASE_PATH, "logs")
+    """設定檔案日誌（支援輪替，避免日誌無限膨脹佔用磁碟）"""
+    log_dir = paths.log_dir()
     os.makedirs(log_dir, exist_ok=True)
     
     log_file = os.path.join(log_dir, "app.log")
@@ -23,8 +32,13 @@ def setup_logging():
     logger = logging.getLogger("wen2")
     logger.setLevel(logging.DEBUG)
     
-    # 檔案處理器
-    file_handler = logging.FileHandler(log_file, encoding='utf-8')
+    # 檔案處理器（輪替）
+    file_handler = RotatingFileHandler(
+        log_file,
+        maxBytes=LOG_MAX_BYTES,
+        backupCount=LOG_BACKUP_COUNT,
+        encoding='utf-8'
+    )
     file_handler.setLevel(logging.DEBUG)
     
     # 格式
@@ -223,7 +237,53 @@ def migrate_table(cursor, table_name, columns):
             print(f"[ error ] {table_name}.{col}: {e}")
 
 
+def migrate_legacy_data():
+    """資料遷移：從舊位置（專案根目錄）搬移到新的資料夾。
+
+    打包後首次執行時，資料庫位於舊的程式資料夾。
+    此處會將其搬移到使用者資料夾，並保留原檔作為 .migrated 備份。
+
+    Returns:
+        str or None: 遷移說明字串，未遷移則回傳 None
+    """
+    if not paths.is_frozen():
+        return None
+
+    target = paths.db_path()
+    if os.path.exists(target):
+        return None
+
+    legacy = paths.legacy_db_path()
+    if not os.path.exists(legacy):
+        return None
+
+    try:
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        # 以 SQLite Online Backup API 取得一致性快照
+        src = sqlite3.connect(legacy)
+        dst = sqlite3.connect(target)
+        src.backup(dst)
+        dst.close()
+        src.close()
+
+        # 保留原檔，不刪除（避免使用者資料遺失）
+        keep = legacy + ".migrated"
+        if not os.path.exists(keep):
+            os.replace(legacy, keep)
+        return f"資料庫已從 {legacy} 遷移至 {target}（原檔保留為 {keep}）"
+    except sqlite3.Error as e:
+        print(f"[ error ] 資料遷移失敗: {e}")
+        return None
+
+
 def init_db():
+    # 打包模式首次執行時，先嘗試搬移舊資料
+    migration_msg = migrate_legacy_data()
+    if migration_msg:
+        print(f"[ migrated ] {migration_msg}")
+
+    os.makedirs(os.path.dirname(DB_NAME), exist_ok=True)
+
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
@@ -336,10 +396,10 @@ def safe_date(value):
 # Audit Log 功能
 # ===========================================================================
 
-def log_db_action(cursor, action, table_name, record_id, old_data, new_data, 
+def log_db_action(cursor, action, table_name, record_id, old_data, new_data,
                   sql_statement="", operator="system", ip_address=None):
     """記錄資料庫操作到 audit_log
-    
+
     Args:
         cursor: 資料庫 cursor
         action: 操作類型 (INSERT/UPDATE/DELETE)
@@ -353,24 +413,35 @@ def log_db_action(cursor, action, table_name, record_id, old_data, new_data,
     """
     # 產生反向 SQL
     reverse_sql = generate_reverse_sql(action, table_name, record_id, old_data, new_data)
-    
+
+    # Defensive: ensure dicts are serialized to JSON strings for SQLite binding
+    def _to_json(val):
+        if val is None:
+            return None
+        if isinstance(val, str):
+            return val
+        try:
+            return json.dumps(val, ensure_ascii=False)
+        except (TypeError, ValueError):
+            return str(val)
+
     # 記錄到 audit_log 表
     cursor.execute("""
-        INSERT INTO audit_log (action, table_name, record_id, old_data, new_data, 
+        INSERT INTO audit_log (action, table_name, record_id, old_data, new_data,
                               sql_statement, reverse_sql, operator, ip_address)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         action,
         table_name,
         record_id,
-        json.dumps(old_data, ensure_ascii=False) if old_data else None,
-        json.dumps(new_data, ensure_ascii=False) if new_data else None,
-        sql_statement,
-        reverse_sql,
-        operator,
-        ip_address
+        _to_json(old_data),
+        _to_json(new_data),
+        sql_statement if sql_statement else "",
+        reverse_sql if reverse_sql else "",
+        operator if operator else "",
+        ip_address,
     ))
-    
+
     return cursor.lastrowid
 
 

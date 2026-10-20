@@ -12,9 +12,14 @@ import os
 import uuid
 import sqlite3
 
+import paths
+
 # 初始化 Flask 應用
 app = Flask(__name__)
 app.jinja_env.add_extension('jinja2.ext.loopcontrols')
+
+# 確保使用者資料夾存在
+paths.ensure_data_dirs()
 
 # 初始化資料庫
 init_db()
@@ -2417,7 +2422,7 @@ def api_pasi_save():
     if image_files:
         # 用 record_id 建立資料夾
         record_dir = f"pasi_record_{record_id}"
-        upload_dir = os.path.join(os.path.dirname(__file__), "static", "uploads", "pasi", record_dir)
+        upload_dir = paths.pasi_upload_dir(record_id)
         os.makedirs(upload_dir, exist_ok=True)
         
         for idx, image_file in enumerate(image_files):
@@ -2455,7 +2460,7 @@ def api_pasi_save():
 # ===========================================================================
 
 # 設定上傳資料夾
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "documents")
+UPLOAD_FOLDER = paths.documents_dir()
 ALLOWED_EXTENSIONS = {'pdf'}  # 只允許 PDF
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
@@ -2857,5 +2862,23 @@ def api_delete_contact(contact_id):
 # 程式啟動
 # ===========================================================================
 
+def main():
+    """程式進入點（供 pyproject.toml 的 [project.scripts] 使用）
+
+    環境變數：
+      PMS_HOST       監聽位址（預設 127.0.0.1，僅本機可存取）
+      PMS_PORT       監聽埠號（預設 5000）
+      PMS_DEBUG      設為 1 開啟除錯模式（預設關閉）
+    """
+    host = os.environ.get("PMS_HOST", "127.0.0.1")
+    port = int(os.environ.get("PMS_PORT", "5000"))
+    debug = os.environ.get("PMS_DEBUG", "").lower() in ("1", "true", "yes")
+
+    logger.info(f"啟動 {paths.APP_TITLE} - 資料夾: {paths.data_dir()}")
+    print(f"{paths.APP_TITLE} 啟動中...  http://{host}:{port}")
+    print(f"資料位置: {paths.data_dir()}")
+    app.run(host=host, port=port, debug=debug)
+
+
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    main()
