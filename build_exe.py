@@ -87,7 +87,6 @@ def build():
         "--hidden-import", "flask",
         "--hidden-import", "werkzeug",
         "--hidden-import", "jinja2",
-        "--hidden-import", "jinja2.ext.loopcontrols",
         "--collect-submodules", "flask",
         "--exclude-module", "tkinter",
         "--exclude-module", "matplotlib",
