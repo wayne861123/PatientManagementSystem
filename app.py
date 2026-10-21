@@ -9,9 +9,21 @@ from database import init_db, get_connection, validate_required_fields, safe_dat
 from functools import wraps
 from datetime import datetime, timedelta
 import os
+import sys
 import uuid
 import sqlite3
 import time
+
+# Windows 預設 console 編碼為 cp1252，無法輸出中文，
+# 此處強制以 UTF-8 輸出以避免 UnicodeEncodeError。
+for _stream_name in ("stdout", "stderr"):
+    _stream = getattr(sys, _stream_name, None)
+    if _stream is not None:
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
 import paths
 import backup

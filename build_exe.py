@@ -23,6 +23,24 @@ import shutil
 import subprocess
 import sys
 
+# Windows 預設的 console 編碼為 cp1252，無法輸出中文，
+# 會造成 UnicodeEncodeError 使腳本無法執行（常見於 CI 環境）。
+# 此處強制以 UTF-8 輸出，並在無法重新設定時忽略編碼錯誤。
+def _force_utf8_output():
+    """確保 stdout/stderr 能輸出中文"""
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        if stream is None:
+            continue
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+    os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+
+
+_force_utf8_output()
+
 APP_NAME = "PatientManagementSystem"
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
