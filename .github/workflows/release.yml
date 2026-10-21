@@ -43,15 +43,16 @@ jobs:
           Write-Output "--- build script ---"
           Test-Path build_exe.py
 
-      # PyInstaller 會將進度資訊輸出到 stderr，PowerShell 預設會將其視為錯誤
-      # 而讓步驟失敗，因此改用 cmd 執行並明確檢查退出碼
-      # 輸出同時寫入 step summary，方便線上排查
+      # 使用 bash 執行：PyInstaller 會將進度資訊輸出到 stderr，
+      # PowerShell 預設會將其視為錯誤而讓步驟失敗，bash 則不會
       - name: 打包執行檔
-        shell: cmd
+        shell: bash
         run: |
-          uv run python build_exe.py --clean > build_log.txt 2>&1
-          echo %errorlevel% > build_rc.txt
-          type build_log.txt
+          set -o pipefail
+          uv run python build_exe.py --clean 2>&1 | tee build_log.txt
+          rc=${PIPESTATUS[0]}
+          echo "exit code: $rc" | tee -a build_log.txt
+          exit $rc
 
       - name: 上傳打包診斷資訊
         if: always()
@@ -60,7 +61,6 @@ jobs:
           name: build-diagnostics
           path: |
             build_log.txt
-            build_rc.txt
           if-no-files-found: ignore
           retention-days: 7
 
