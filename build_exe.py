@@ -43,6 +43,11 @@ def clean():
         if os.path.exists(path):
             shutil.rmtree(path, ignore_errors=True)
             print(f"  [OK] Removed {d}/")
+    # PyInstaller 自動產生的 .spec 檔
+    spec = os.path.join(ROOT, f"{APP_NAME}.spec")
+    if os.path.exists(spec):
+        os.remove(spec)
+        print(f"  [OK] Removed {APP_NAME}.spec")
     # PyInstaller 快取
     for d in ("__pycache__",):
         path = os.path.join(ROOT, d)

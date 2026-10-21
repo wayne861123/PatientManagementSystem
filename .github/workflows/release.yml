@@ -33,10 +33,19 @@ jobs:
         uses: astral-sh/setup-uv@v3
 
       - name: 安裝相依套件
+        shell: pwsh
         run: uv sync --all-extras
 
+      # PyInstaller 會將進度資訊輸出到 stderr，PowerShell 預設會將其視為錯誤
+      # 而讓步驟失敗，因此改用 cmd 執行並明確檢查退出碼
       - name: 打包執行檔
-        run: uv run python build_exe.py --clean
+        shell: cmd
+        run: |
+          uv run python build_exe.py --clean
+          if %errorlevel% neq 0 (
+            echo 打包失敗
+            exit /b 1
+          )
 
       - name: 壓縮成 zip
         shell: pwsh
