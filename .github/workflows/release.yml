@@ -99,28 +99,14 @@ jobs:
           "$hash  $name" | Out-File "dist\$name.sha256" -Encoding utf8
           Write-Output "SHA256: $hash"
 
+      # 發行說明以範本檔 + 簡單字串取代產生，
+      # 避免在 workflow 內嵌中文造成編碼問題
       - name: 產生發行說明
-        shell: pwsh
+        shell: bash
         run: |
-          $version = (Get-Content version_info.txt).Trim()
-          $notes = @"
-          ## $version
-
-          醫師門診管理系統 $version
-
-          ### 安裝
-          1. 下載 `PatientManagementSystem-$version-windows-x64.zip`
-          2. 解壓縮到任意資料夾（例如 `C:\PatientManagementSystem`）
-          3. 執行 `PatientManagementSystem.exe`
-
-          ### 資料存放位置
-          資料庫與備份存放在 `%LOCALAPPDATA%\PatientManagementSystem`，
-          更新程式不會影響使用者資料。
-
-          ### 驗證
-          可用 `$name.sha256` 檔案核對下載內容的完整性。
-          "@@
-          $notes | Out-File "release_notes.md" -Encoding utf8
+          version=$(tr -d '\r\n' < version_info.txt)
+          sed "s/{{VERSION}}/$version/g" .github/RELEASE_TEMPLATE.md > release_notes.md
+          cat release_notes.md
 
       - name: 發佈 Release
         uses: softprops/action-gh-release@v2
