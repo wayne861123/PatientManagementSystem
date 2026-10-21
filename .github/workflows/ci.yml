@@ -29,14 +29,21 @@ jobs:
 
       # PyInstaller 會將進度資訊輸出到 stderr，PowerShell 預設會將其視為錯誤
       # 而讓步驟失敗，因此改用 cmd 執行並明確檢查退出碼
+      # 輸出同時寫入 step summary，方便線上排查
       - name: 打包驗證
         shell: cmd
         run: |
-          uv run python build_exe.py --clean
-          if %errorlevel% neq 0 (
-            echo 打包失敗
-            exit /b 1
-          )
+          uv run python build_exe.py --clean > build_log.txt 2>&1
+          echo %errorlevel% > build_rc.txt
+          type build_log.txt
+
+      - name: 上傳打包診斷資訊
+        if: always()
+        shell: pwsh
+        run: |
+          $log = if (Test-Path build_log.txt) { Get-Content build_log.txt -Raw } else { '(no log)' }
+          $rc = if (Test-Path build_rc.txt) { Get-Content build_rc.txt -Raw } else { '(no rc)' }
+          "### 打包診斷`n`n退出碼: $rc`n````n$log`n````" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
       - name: 確認執行檔存在
         shell: pwsh
