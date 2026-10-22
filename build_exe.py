@@ -59,7 +59,7 @@ def clean():
     for d in ("build", "dist"):
         path = os.path.join(ROOT, d)
         if os.path.exists(path):
-            shutil.rmtree(path, ignore_errors=True)
+            _remove_tree(path)
             print(f"  [OK] Removed {d}/")
     # PyInstaller 自動產生的 .spec 檔
     spec = os.path.join(ROOT, f"{APP_NAME}.spec")
@@ -71,6 +71,43 @@ def clean():
         path = os.path.join(ROOT, d)
         if os.path.exists(path):
             shutil.rmtree(path, ignore_errors=True)
+
+
+def _remove_tree(path):
+    """刪除目錄樹，並處理檔案被鎖定的情況。
+
+    Windows 上若先前的執行檔仍在執行，檔案會被鎖定而無法刪除，
+    此時會嘗試結束該程序後再刪除。
+    """
+    def _on_error(func, failed_path, _exc):
+        if not os.path.exists(failed_path):
+            return
+        # 若是執行中的執行檔，嘗試結束它
+        if failed_path.lower().endswith(".exe"):
+            _kill_running_exe()
+        try:
+            os.chmod(failed_path, 0o700)
+            func(failed_path)
+        except OSError:
+            pass
+
+    shutil.rmtree(path, onerror=_on_error)
+
+
+def _kill_running_exe():
+    """結束正在執行的 PatientManagementSystem.exe"""
+    if os.name != "nt":
+        return
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["taskkill", "/F", "/IM", f"{APP_NAME}.exe"],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0:
+            print(f"  [OK] 已結束執行中的 {APP_NAME}.exe")
+    except (OSError, subprocess.SubprocessError):
+        pass
 
 
 def check_requirements():
