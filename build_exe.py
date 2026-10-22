@@ -102,7 +102,7 @@ def build():
         "--noconfirm",
         "--clean",
         "--name", APP_NAME,
-        "--windowed",              # 不顯示 console 視窗
+        "--console",              # 保留 console 視窗，方便使用者查看即時訊息
         "--onedir",               # 資料夾模式（啟動快、易更新）
         "--add-data", f"templates{os.pathsep}templates",
         "--add-data", f"static{os.pathsep}static",

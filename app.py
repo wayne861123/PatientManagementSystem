@@ -3082,11 +3082,26 @@ def main():
     debug = os.environ.get("PMS_DEBUG", "").lower() in ("1", "true", "yes")
 
     logger.info(f"啟動 {paths.APP_TITLE} - 資料夾: {paths.data_dir()}")
-    print(f"{paths.APP_TITLE} 啟動中...  http://{host}:{port}")
-    print(f"資料位置: {paths.data_dir()}")
+
+    print("=" * 52)
+    print(f"  {paths.APP_TITLE}  v{version.current_version()}")
+    print("=" * 52)
+    print(f"  網址      : http://{host}:{port}")
+    print(f"  資料位置  : {paths.data_dir()}")
+    print(f"  日誌檔    : {os.path.join(paths.log_dir(), 'app.log')}")
+    print("-" * 52)
+    print("  請勿關閉此視窗，關閉將會停止服務")
+    print("  停止服務 : 在此視窗按 Ctrl+C")
+    print("=" * 52)
+    print()
 
     _open_browser_after()
-    app.run(host=host, port=port, debug=debug)
+    try:
+        app.run(host=host, port=port, debug=debug)
+    except KeyboardInterrupt:
+        print()
+        print("服務已停止")
+        logger.info("服務已停止（使用者中斷）")
 
 
 if __name__ == "__main__":

@@ -11,7 +11,11 @@ A Flask-based patient management system for tracking patient information, medica
 3. 執行 `PatientManagementSystem.exe`
 4. 瀏覽器開啟 http://127.0.0.1:5000
 
-> 程式啟動後會自動開啟瀏覽器視窗（若未開啟請手動開啟上述網址）。
+> 程式啟啟後會自動開啟瀏覽器視窗（若未開啟請手動開啟上述網址）。
+>
+> 執行檔為 **console 版本**，會保留一個黑色視窗顯示即時訊息，
+> 包含啟動資訊、資料位置與日誌檔位置。**請勿關閉該視窗**，關閉將會停止服務；
+> 若要停止服務請在該視窗按 `Ctrl+C`。
 
 首次啟動時資料庫為空，可直接開始建立病患資料。
 

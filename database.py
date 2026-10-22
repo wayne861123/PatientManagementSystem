@@ -2,6 +2,7 @@ import sqlite3
 import os
 import json
 import logging
+import sys
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from functools import wraps
@@ -23,7 +24,11 @@ LOG_BACKUP_COUNT = 3
 # ===========================================================================
 
 def setup_logging():
-    """設定檔案日誌（支援輪替，避免日誌無限膨脹佔用磁碟）"""
+    """設定檔案日誌（支援輪替，避免日誌無限膨脹佔用磁碟）
+
+    打包模式為 console 版本時，額外將日誌同步輸出到 console，
+    使用者可即時看到訊息而不必開啟日誌檔。
+    """
     log_dir = paths.log_dir()
     os.makedirs(log_dir, exist_ok=True)
     
@@ -50,6 +55,16 @@ def setup_logging():
     
     if not logger.handlers:
         logger.addHandler(file_handler)
+
+    # Console 輸出（僅在有 console 可用時，例如打包後的 console 版本）
+    if paths.is_frozen() and sys.stdout is not None:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(logging.Formatter(
+            '%(asctime)s | %(levelname)-7s | %(message)s',
+            datefmt='%H:%M:%S'
+        ))
+        logger.addHandler(console_handler)
     
     return logger
 
