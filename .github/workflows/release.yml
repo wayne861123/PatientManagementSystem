@@ -35,14 +35,7 @@ jobs:
 
       - name: 安裝相依套件
         shell: pwsh
-        run: |
-          uv sync --all-extras
-          Write-Output "--- python ---"
-          uv run python --version
-          Write-Output "--- pyinstaller ---"
-          uv run python -c "import PyInstaller; print(PyInstaller.__version__)"
-          Write-Output "--- build script ---"
-          Test-Path build_exe.py
+        run: uv sync --all-extras
 
       # 使用 bash 執行：PyInstaller 會將進度資訊輸出到 stderr，
       # PowerShell 預設會將其視為錯誤而讓步驟失敗，bash 則不會

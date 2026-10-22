@@ -40,11 +40,13 @@ jobs:
 
       - name: 上傳打包診斷資訊
         if: always()
-        shell: pwsh
-        run: |
-          $log = if (Test-Path build_log.txt) { Get-Content build_log.txt -Raw } else { '(no log)' }
-          $rc = if (Test-Path build_rc.txt) { Get-Content build_rc.txt -Raw } else { '(no rc)' }
-          "### 打包診斷`n`n退出碼: $rc`n````n$log`n````" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-diagnostics
+          path: |
+            build_log.txt
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: 確認執行檔存在
         shell: pwsh
