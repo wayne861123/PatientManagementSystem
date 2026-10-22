@@ -1,6 +1,6 @@
 [project]
 name = "patient-management-system"
-version = "1.1.0"
+version = "1.1.1"
 description = "醫師門診管理系統 - Flask 病患管理系統"
 requires-python = ">=3.11"
 dependencies = [
