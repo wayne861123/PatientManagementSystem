@@ -4,6 +4,8 @@
 
 ## [未發布]
 
+## [1.1.2] - 2026-10-29
+
 ### 修正
 - 修正用藥歷史頁面「藥物類型」與「藥物名稱」錯配的問題：
   `traditional_medicines` 與 `biological_medicines` 兩張表的 id 各自從 1 開始，
