@@ -612,29 +612,31 @@ def all_medicine_record(patient_id):
     biological_medicine_record = cursor.fetchall()
 
     # 批次載入所有藥物名稱（消除 N+1 查詢）
-    all_medicine_ids = set()
-    for r in traditional_medicine_record:
-        if r["name"]:
-            all_medicine_ids.add(r["name"])
-    for r in biological_medicine_record:
-        if r["name"]:
-            all_medicine_ids.add(r["name"])
+    # 注意：traditional_medicines 與 biological_medicines 的 id 各自從 1 開始，
+    #       因此必須分別建立對照表。若合併成同一個 dict，後查詢的生物製劑會
+    #       覆蓋掉同 id 的傳統用藥，導致「藥物類型」與「藥物名稱」錯配。
+    traditional_ids = {r["name"] for r in traditional_medicine_record if r["name"]}
+    biological_ids = {r["name"] for r in biological_medicine_record if r["name"]}
 
-    medicine_name_map = {}
-    if all_medicine_ids:
-        placeholders = ",".join("?" * len(all_medicine_ids))
+    traditional_name_map = {}
+    if traditional_ids:
+        placeholders = ",".join("?" * len(traditional_ids))
         cursor.execute(
             f"SELECT id, name FROM traditional_medicines WHERE id IN ({placeholders})",
-            list(all_medicine_ids)
+            list(traditional_ids)
         )
         for r in cursor.fetchall():
-            medicine_name_map[r["id"]] = r["name"]
+            traditional_name_map[r["id"]] = r["name"]
+
+    biological_name_map = {}
+    if biological_ids:
+        placeholders = ",".join("?" * len(biological_ids))
         cursor.execute(
             f"SELECT id, name FROM biological_medicines WHERE id IN ({placeholders})",
-            list(all_medicine_ids)
+            list(biological_ids)
         )
         for r in cursor.fetchall():
-            medicine_name_map[r["id"]] = r["name"]
+            biological_name_map[r["id"]] = r["name"]
 
     # 將 list 反轉，使 pop() 拿最新（ORDER BY id ASC → reverse 後 pop() = 最新）
     trad_stack = [dict(r) for r in traditional_medicine_record]
@@ -652,18 +654,22 @@ def all_medicine_record(patient_id):
             return None
 
     # 合併所有記錄，加入 type 與 display_name
-    # 注意：name 欄位為 TEXT 型別，而 medicine_name_map 的 key 來自 INTEGER id，
+    # 注意：name 欄位為 TEXT 型別，而名稱對照表的 key 來自 INTEGER id，
     #       需統一轉為整數後查詢，否則會取不到藥物名稱而顯示數字 id
     all_records = []
     for r in trad_stack:
         r["type"] = "traditional"
         mid = r.get("name")
-        r["display_name"] = medicine_name_map.get(safe_int(mid), str(mid) if mid else "")
+        r["display_name"] = traditional_name_map.get(
+            safe_int(mid), str(mid) if mid else ""
+        )
         all_records.append(r)
     for r in bio_stack:
         r["type"] = "biological"
         mid = r.get("name")
-        r["display_name"] = medicine_name_map.get(safe_int(mid), str(mid) if mid else "")
+        r["display_name"] = biological_name_map.get(
+            safe_int(mid), str(mid) if mid else ""
+        )
         all_records.append(r)
 
     # 以 type（traditional 先）+ display_name + 日期（最新優先）排序
@@ -673,14 +679,18 @@ def all_medicine_record(patient_id):
         -(_safe_date(r["followup_date"]) or datetime.min).toordinal()
     ))
 
-    # 依 display_name 分組
+    # 依 (type, display_name) 分組
+    # 分組鍵必須包含 type，否則傳統用藥與生物製劑若恰巧同名會被併成同一組，
+    # 導致群組標題的「藥物類型」與實際內容不符
     groups = []
     current_group = None
     for record in all_records:
-        if current_group is None or current_group["display_name"] != record["display_name"]:
+        group_key = (record["type"], record["display_name"])
+        if current_group is None or current_group["key"] != group_key:
             if current_group is not None:
                 groups.append(current_group)
             current_group = {
+                "key": group_key,
                 "type": record["type"],
                 "display_name": record["display_name"],
                 "records": [record]

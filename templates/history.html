@@ -29,7 +29,9 @@
         <!-- 群組內容 -->
         <div class="history-group-content" id="content-{{ loop.index }}">
             {% for record in group.records %}
-            <form id="form-{{ record.id }}">
+            {# DOM id 必須包含 type：兩張用藥紀錄表的 id 各自獨立遞增，會重複 #}
+            {% set row_key = record.type ~ '-' ~ record.id %}
+            <form id="form-{{ row_key }}">
                 <input type="hidden" name="record_id" value="{{ record.record_id }}" disabled>
                 <input type="hidden" name="patient_id" value="{{ record.patient_id }}" disabled>
                 <input type="hidden" name="id" value="{{ record.id }}" disabled>
@@ -66,12 +68,12 @@
                     </div>
                     <div class="history-item">
                         <label>額外藥物</label>
-                        <textarea class="textarea additional-medicine-textarea" id="additional-medicine-textarea-{{ record.id }}" disabled>{{ "\n".join(record.additional_medicine.split(",")) if record.additional_medicine else '' }}</textarea>
-                        <input type="hidden" id="additional-medicine-hidden-{{ record.id }}" name="additional_medicine" value="{{ record.additional_medicine if record.additional_medicine else '' }}">
-                        <div class="checkbox-scroll-container additional-medicine-checkbox-container hidden" id="additional-medicine-checkbox-container-{{ record.id }}">
+                        <textarea class="textarea additional-medicine-textarea" id="additional-medicine-textarea-{{ row_key }}" disabled>{{ "\n".join(record.additional_medicine.split(",")) if record.additional_medicine else '' }}</textarea>
+                        <input type="hidden" id="additional-medicine-hidden-{{ row_key }}" name="additional_medicine" value="{{ record.additional_medicine if record.additional_medicine else '' }}">
+                        <div class="checkbox-scroll-container additional-medicine-checkbox-container hidden" id="additional-medicine-checkbox-container-{{ row_key }}">
                             {% for med in additional_medicines %}
                             <label class="checkbox-label">
-                                <input type="checkbox" class="edit-additional-medicine-checkbox" data-record-id="{{ record.id }}" value="{{ med.name }}" {% if record.additional_medicine and med.name in record.additional_medicine %}checked{% endif %}>
+                                <input type="checkbox" class="edit-additional-medicine-checkbox" data-record-id="{{ row_key }}" value="{{ med.name }}" {% if record.additional_medicine and med.name in record.additional_medicine %}checked{% endif %}>
                                 <span>{{ med.name }}</span>
                             </label>
                             {% endfor %}
@@ -82,10 +84,10 @@
                         <textarea name="remark" class="textarea" disabled>{{ record.remark }}</textarea>
                     </div>
                     <div class="btn-group">
-                    <a id="edit-btn-{{ record.id }}" href="javascript:void(0)" class="general-btn" onclick="enableRowEditing('{{ record.id }}')">編輯</a>
-                    <a id="save-btn-{{ record.id }}" href="javascript:void(0)" class="general-btn hidden" onclick="saveRow('{{ record.id }}')">保存</a>
-                    <a id="cancel-btn-{{ record.id }}" href="javascript:void(0)" class="general-btn hidden" onclick="cancelRow('{{ record.id }}')">取消</a>
-                    <a id="delete-btn-{{ record.id }}" href="javascript:void(0);" class="general-btn" onclick="deleteHistory('{{ record.id }}')">刪除</a>
+                    <a id="edit-btn-{{ row_key }}" href="javascript:void(0)" class="general-btn" onclick="enableRowEditing('{{ row_key }}')">編輯</a>
+                    <a id="save-btn-{{ row_key }}" href="javascript:void(0)" class="general-btn hidden" onclick="saveRow('{{ row_key }}')">保存</a>
+                    <a id="cancel-btn-{{ row_key }}" href="javascript:void(0)" class="general-btn hidden" onclick="cancelRow('{{ row_key }}')">取消</a>
+                    <a id="delete-btn-{{ row_key }}" href="javascript:void(0);" class="general-btn" onclick="deleteHistory('{{ row_key }}', '{{ record.type }}')">刪除</a>
                     </div>
                 </div>
             </form>
@@ -102,18 +104,26 @@
     // 儲存原始值，取消時恢復用
     const originalValues = {};
 
-    function deleteHistory(id, type) {
+    /**
+     * 刪除用藥歷史記錄
+     * @param {string} rowKey - 記錄的唯一鍵（格式為 "{type}-{id}"）
+     * @param {string} type - 藥物類型（"traditional" 或 "biological"）
+     */
+    function deleteHistory(rowKey, type) {
         if (!confirm("確定要刪除?")) {
             return ;
         }
+        // rowKey 格式為 "{type}-{id}"，取出該表的記錄 id
+        const id = String(rowKey).split("-").pop();
         const formData = new FormData();
         formData.append("id", id);
         formData.append("type", type);
         fetch("{{ url_for('api_delete_history') }}", {
-            method: "DELETE", 
+            method: "DELETE",
             body: formData
         }).then(response => response.json()).then(data => {
             if (data.success === false) {
+                alert("刪除失敗: " + (data.message || "未知錯誤"));
                 return false;
             }
         })
