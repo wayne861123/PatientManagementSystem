@@ -199,7 +199,7 @@ uv venv --python 3.11
 # 或 CMD：
 # .venv\Scripts\activate.bat
 
-# 3. 安裝依賴（會自動解析並鎖定版本到 uv.lock）
+# 3. 安裝依賴（uv 會自動解析並在本機產生 uv.lock，該檔案不納入版控）
 uv sync
 
 # 4. 初始化資料庫（首次執行時自動建立）
@@ -212,10 +212,13 @@ python app.py
 ### 更新依賴
 
 ```bash
-# 新增或更新 dependencies 後，重新 lock 並安裝
-uv lock
+# 新增或更新 dependencies 後，重新解析並安裝
 uv sync
 ```
+
+> `uv.lock` 不納入版控（見 `.gitignore`），每次 `uv sync` 都會依當下的
+> `pyproject.toml` 重新解析版本。若需要固定版本以確保可重現的建置，
+> 可在本機執行 `uv lock` 後保留該檔案自行管理。
 
 ## CLI Tools
 
