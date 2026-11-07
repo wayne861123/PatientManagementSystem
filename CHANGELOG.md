@@ -11,6 +11,17 @@
   DOM id `settings`（HTML 規範要求 id 唯一，`getElementById` 只會取到第一個）。
   移除重複的一行後即恢復正確；另補上逐頁檢查的重複 id 回歸測試。
 
+### 改變
+- 移除「系統設定」頁面的「選擇版本」功能：移除版本下拉選單、「切換至此版本」按鈕
+  與版本清單，同時移除對應的 `/api/list/versions`、`/api/switch/version` 兩個 API
+  與 `settings.js` 的 `loadVersions()` / `switchVersion()`。套用更新（檢查更新／
+  下載並安裝更新）與資料備份功能不受影響
+- 修正 `static/settings.js` 的 `switchVersion()` 缺少結尾 `}` 造成的括號不平衡：
+  該缺陷使 `createBackup` / `checkIntegrity` / `restoreBackup` 三個函式被巢狀在
+  `switchVersion()` 內部而非全域函式，導致設定頁的「立即建立備份」「檢查資料庫完整性」
+  「還原」按鈕在瀏覽器中拋出 `ReferenceError` 而失效，且檔案最後的
+  `DOMContentLoaded` 監聽器也從未註冊。移除「選擇版本」功能時一併修好
+
 ## [1.1.2] - 2026-10-29
 
 ### 修正

@@ -67,66 +67,6 @@ function doUpdate() {
         });
 }
 
-function loadVersions() {
-    fetch("/api/list/versions")
-        .then(r => r.json())
-        .then(data => {
-            const sel = document.getElementById('version-select');
-            const list = document.getElementById('version-list');
-            if (!sel) return;
-
-            if (!data.releases || data.releases.length === 0) {
-                sel.innerHTML = '<option value="">目前沒有可用的版本</option>';
-                if (list) {
-                    list.innerHTML = '<p class="section-hint">尚未發布任何版本，或無法連線至 GitHub。</p>';
-                }
-                return;
-            }
-
-            let opts = '<option value="">請選擇版本</option>';
-            let html = '';
-            data.releases.forEach(r => {
-                const isCurrent = r.tag === data.current;
-                const label = r.tag + (isCurrent ? '（目前使用中）' : '');
-                opts += '<option value="' + r.tag + '">' + label + '</option>';
-                html += '<div class="version-item">' +
-                    '<span class="version-tag">' + r.tag + '</span>' +
-                    '<span class="version-date">' + (r.published_at || '').substring(0, 10) + '</span>' +
-                    (isCurrent ? '<span class="badge-pinned">目前版本</span>' : '') +
-                    '</div>';
-            });
-            sel.innerHTML = opts;
-            if (list) list.innerHTML = html;
-        })
-        .catch(() => {
-            const sel = document.getElementById('version-select');
-            if (sel) sel.innerHTML = '<option value="">載入失敗</option>';
-        });
-}
-
-function switchVersion() {
-    const sel = document.getElementById('version-select');
-    const tag = sel ? sel.value : '';
-    if (!tag) {
-        alert('請先選擇要切換的版本');
-        return;
-    }
-    if (!confirm('確定要切換至版本 ' + tag + ' 嗎？\n\n切換前會自動建立資料庫備份。\n切換後需要重新啟動程式。')) {
-        return;
-    }
-    showMessage('update-message', '正在切換至 ' + tag + ' ...', false);
-    fetch("/api/switch/version", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tag: tag })
-    })
-        .then(r => r.json())
-        .then(data => {
-            showMessage('update-message',
-                data.success ? data.message : ('切換失敗：' + data.message), !data.success);
-        })
-        .catch(e => showMessage('update-message', '切換失敗：' + e, true));
-
 function createBackup() {
     showMessage('backup-message', '建立備份中...', false);
     fetch("/api/backup/create", { method: 'POST' })
@@ -177,9 +117,8 @@ function restoreBackup(name) {
         .catch(e => showMessage('backup-message', '還原失敗：' + e, true));
 }
 
-// 載入時自動取得版本清單與完整性狀態
+// 載入時自動取得資料庫完整性狀態
 document.addEventListener('DOMContentLoaded', function () {
-    loadVersions();
     fetch("/api/backup/check")
         .then(r => r.json())
         .then(data => {
@@ -187,5 +126,3 @@ document.addEventListener('DOMContentLoaded', function () {
             if (el) el.textContent = data.ok ? '正常' : ('異常：' + data.message);
         });
 });
-
-}

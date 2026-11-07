@@ -2627,56 +2627,10 @@ def api_check_update():
     }
 
 
-@app.route("/api/list/versions")
-def api_list_versions():
-    """列出所有可選版本"""
-    releases = version.fetch_all_releases()
-    return {
-        "current": version.current_version(),
-        "releases": [
-            {
-                "tag": r["tag"],
-                "name": r["name"],
-                "published_at": r["published_at"],
-                "url": r["url"],
-                "assets": r["assets"],
-            }
-            for r in releases
-        ],
-    }
-
-
 @app.route("/api/apply/update", methods=["POST"])
 def api_apply_update():
     """下載並安裝更新"""
     ok, msg = updater.perform_update()
-    return {"success": ok, "message": msg}
-
-
-@app.route("/api/switch/version", methods=["POST"])
-def api_switch_version():
-    """切換至指定版本"""
-    data = request.get_json(silent=True) or {}
-    tag = data.get("tag")
-    if not tag:
-        return {"success": False, "message": "未指定版本"}, 400
-
-    # 找出對應的 Release
-    target = None
-    for rel in version.fetch_all_releases():
-        if rel["tag"] == tag:
-            target = rel
-            break
-
-    if not target:
-        return {"success": False, "message": f"找不到版本 {tag}"}, 404
-
-    # 建立切換前快照
-    snapshot = backup.create_backup("upgrade")
-    if snapshot:
-        logger.info(f"版本切換前快照: {snapshot}")
-
-    ok, msg = updater.perform_update(target)
     return {"success": ok, "message": msg}
 
 
