@@ -4,23 +4,26 @@
 
 ## [未發布]
 
+## [1.1.3] - 2026-11-07
+
 ### 修正
 - 修正側邊欄出現兩個「系統設定」項目的問題：`templates/base.html` 中
   `<li><a id="settings" ...>系統設定</a></li>` 在 commit `e5895fc` 新增系統設定頁面時
   被複製貼上兩次，導致每個頁面的側邊欄都顯示兩個「系統設定」，且頁面上出現重複的
   DOM id `settings`（HTML 規範要求 id 唯一，`getElementById` 只會取到第一個）。
-  移除重複的一行後即恢復正確；另補上逐頁檢查的重複 id 回歸測試。
+  移除重複的一行後即恢復正確；另補上逐頁檢查的重複 id 回歸測試
+- 修正 `static/settings.js` 的 `switchVersion()` 缺少結尾 `}` 造成的括號不平衡：
+  該缺陷使 `createBackup` / `checkIntegrity` / `restoreBackup` 三個函式被巢狀在
+  `switchVersion()` 內部而非全域函式，導致設定頁的「立即建立備份」「檢查資料庫完整性」
+  「還原」按鈕在瀏覽器中拋出 `ReferenceError` 而失效，且檔案最後的
+  `DOMContentLoaded` 監聽器也從未註冊。移除「選擇版本」功能時一併修好
 
 ### 改變
 - 移除「系統設定」頁面的「選擇版本」功能：移除版本下拉選單、「切換至此版本」按鈕
   與版本清單，同時移除對應的 `/api/list/versions`、`/api/switch/version` 兩個 API
   與 `settings.js` 的 `loadVersions()` / `switchVersion()`。套用更新（檢查更新／
   下載並安裝更新）與資料備份功能不受影響
-- 修正 `static/settings.js` 的 `switchVersion()` 缺少結尾 `}` 造成的括號不平衡：
-  該缺陷使 `createBackup` / `checkIntegrity` / `restoreBackup` 三個函式被巢狀在
-  `switchVersion()` 內部而非全域函式，導致設定頁的「立即建立備份」「檢查資料庫完整性」
-  「還原」按鈕在瀏覽器中拋出 `ReferenceError` 而失效，且檔案最後的
-  `DOMContentLoaded` 監聽器也從未註冊。移除「選擇版本」功能時一併修好
+- `uv.lock` 不再納入版控，改由 `uv sync` 依 `pyproject.toml` 即時解析
 
 ## [1.1.2] - 2026-10-29
 
