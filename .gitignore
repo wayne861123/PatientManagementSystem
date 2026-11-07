@@ -167,3 +167,4 @@ run_tests.py
 
 # Dev-only scripts (種子資料等開發者工具，使用者不需要)
 scripts/
+*.txt
